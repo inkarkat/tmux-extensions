@@ -1,0 +1,7 @@
+#!/bin/sh
+
+if tmux list-sessions | grep -vq ' (attached)$'; then
+    exec tmux attach-session \; choose-tree
+else
+    exec tmux new-session \; choose-tree
+fi
