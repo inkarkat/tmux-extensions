@@ -1,0 +1,29 @@
+#!/bin/bash
+
+printUsage()
+{
+    cat <<HELPTEXT
+Run COMMANDS and capture the console output in a text file.
+HELPTEXT
+printf 'Usage: %q %s\n' "$(basename "$1")" '[-f|--file CAPTURE_FILESPEC] COMMANDS [-?|-h|--help]'
+}
+
+captureFilespec=
+while [ $# -ne 0 ]
+do
+    case "$1" in
+	--help|-h|-\?)	shift; printUsage "$0"; exit 0;;
+	--file|-f)	shift; captureFilespec="$1"; shift;;
+	--)		shift; break;;
+	-*)		{ echo "ERROR: Unknown option \"$1\"!"; echo; printUsage "$0"; } >&2; exit 2;;
+	*)		break;;
+    esac
+done
+[ $# -eq 0 ] && { printUsage "$0"; exit 2; }
+
+if [ ! "$captureFilespec" ]; then
+    captureFilespec=$(mktemp --tmpdir "$(basename -- "$0")-XXXXXX" 2>/dev/null || echo "${TEMP:-/tmp}/$(basename -- "$0").$$$RANDOM")
+    printf '%s\n' "$captureFilespec"
+fi
+
+exec tmux new-session "($*); tmux capture-pane -S - -E - -p > '${captureFilespec}'" > /dev/null
