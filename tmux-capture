@@ -26,4 +26,4 @@ if [ ! "$captureFilespec" ]; then
     printf '%s\n' "$captureFilespec"
 fi
 
-exec tmux new-session "($*); tmux capture-pane -S - -E - -p > '${captureFilespec}'" > /dev/null
+exec tmux new-session "($*); echo EOF; tmux capture-pane -S - -E - -J -p | sed -e :a -e '/^EOF\\n*\$/{\$d;N;ba' -e '}' > '${captureFilespec}'" > /dev/null
