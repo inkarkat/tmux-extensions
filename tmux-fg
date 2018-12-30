@@ -1,0 +1,13 @@
+#!/bin/bash
+# vimcommand: DuplicateWrite tmux-[fb]g:92f8503c:
+
+readonly scriptName=$(basename -- "${BASH_SOURCE[0]}")
+typeset -a tmuxArgs=()
+case "$scriptName" in
+    *-bg)   tmuxArgs+=(-d);;
+esac
+
+commandName="$(commandName --undefined '' "$@")"
+[ "$commandName" ] && tmuxArgs+=(-n "$commandName")
+
+exec tmux new-window "${tmuxArgs[@]}" "$@"
