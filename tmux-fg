@@ -2,6 +2,8 @@
 # vimcommand: DuplicateWrite tmux-[fb]g:92f8503c:
 
 readonly scriptName=$(basename -- "${BASH_SOURCE[0]}")
+configPrefix="${scriptName^^}"
+configPrefix="${configPrefix//-/_}"
 typeset -a tmuxArgs=()
 typeset where="and activate that window"
 case "$scriptName" in
@@ -24,4 +26,9 @@ esac
 commandName="$(commandName --undefined '' "$@")"
 [ "$commandName" ] && tmuxArgs+=(-n "$commandName")
 
-exec tmux new-window "${tmuxArgs[@]}" "$@"
+preCommandVariable="${configPrefix}_PRE_COMMAND"
+postCommandVariable="${configPrefix}_POST_COMMAND"
+preCommand="${!preCommandVariable}"
+postCommand="${!postCommandVariable}"
+
+exec tmux ${preCommand} ${preCommand:+;} new-window "${tmuxArgs[@]}" "$@" ${postCommand:+;} ${postCommand}
