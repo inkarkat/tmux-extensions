@@ -1,0 +1,34 @@
+#!/bin/bash
+# vimcommand: DuplicateWrite tmux-[fb]g:92f8503c:
+
+readonly scriptName=$(basename -- "${BASH_SOURCE[0]}")
+configPrefix="${scriptName^^}"
+configPrefix="${configPrefix//-/_}"
+typeset -a tmuxArgs=()
+typeset where="and activate that window"
+case "$scriptName" in
+    *-bg)   tmuxArgs+=(-d); where="in the background, without going to that window";;
+esac
+
+printUsage()
+{
+    cat <<HELPTEXT
+Start COMMAND in a new tmux window $where.
+HELPTEXT
+    printf 'Usage: %q %s\n' "$(basename "$1")" '[-c start-directory] COMMAND [...] [-?|-h|--help]'
+}
+
+case "$1" in
+    --help|-h|-\?)	shift; printUsage "$0"; exit 0;;
+    -c)			tmuxArgs+=("$1" "$2"); shift; shift;;
+esac
+
+commandName="$(commandName --undefined '' "$@")"
+[ "$commandName" ] && tmuxArgs+=(-n "$commandName")
+
+preCommandVariable="${configPrefix}_PRE_COMMAND"
+postCommandVariable="${configPrefix}_POST_COMMAND"
+preCommand="${!preCommandVariable}"
+postCommand="${!postCommandVariable}"
+
+exec tmux ${preCommand} ${preCommand:+;} new-window "${tmuxArgs[@]}" "$@" ${postCommand:+;} ${postCommand}
