@@ -1,5 +1,17 @@
 #!/bin/sh
 
+printUsage()
+{
+    cat <<HELPTEXT
+Activate the current Tmux pane and window (but not the terminal that Tmux is
+running in), so that whatever is happening there becomes visible.
+HELPTEXT
+    printf 'Usage: %q %s\n' "$(basename "$1")" '[-?|-h|--help]'
+}
+case "$1" in
+    --help|-h|-\?)	shift; printUsage "$0"; exit 0;;
+esac
+
 if [ ! "$TMUX" ]; then
     echo >&2 'Not in a TMUX session!'
     exit 1
