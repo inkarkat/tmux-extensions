@@ -1,0 +1,12 @@
+#!/bin/sh
+
+if [ ! "$TMUX" ]; then
+    echo >&2 'Not in a TMUX session!'
+    exit 1
+fi
+
+# tmux sets an environment variable for the current pane, but we also need to
+# return to the current window that hosts the pane, and for that there's no
+# variable, unfortunately.
+TMUX_WINDOW=$(tmux display-message -p '#{window_id}') || exit $?
+exec tmux select-pane -t "$TMUX_PANE" \; select-window -t "$TMUX_WINDOW"
