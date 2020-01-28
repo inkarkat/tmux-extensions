@@ -31,4 +31,4 @@ postCommandVariable="${configPrefix}_POST_COMMAND"
 preCommand="${!preCommandVariable}"
 postCommand="${!postCommandVariable}"
 
-exec tmux ${preCommand} ${preCommand:+;} new-window "${tmuxArgs[@]}" "$@" ${postCommand:+;} ${postCommand}
+exec tmux-wrapper ${preCommand} ${preCommand:+;} new-window "${tmuxArgs[@]}" "$@" ${postCommand:+;} ${postCommand}

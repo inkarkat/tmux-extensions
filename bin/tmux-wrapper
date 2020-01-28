@@ -1,0 +1,28 @@
+#!/bin/bash
+
+readonly TMUX_SESSION_CONF=~/.tmux-session.conf
+
+if contains new-session "$@" || contains attach-session "$@"; then
+    # XXX: The appended commands are executed on the attached / created session;
+    # i.e. the user selection of choose-tree is ignored, and the command is
+    # immediately applied to the current session. We'd need event handlers
+    # (e.g. SessionEnter) inside tmux to fix this.
+
+    if [ -z "$TMUX" -a "${TERM%-256color}" = "screen" ]; then
+	# When launched nested within another tmux session (determined by
+	# checking for TERM=screen[...]) remotely (e.g. through SSH - we check
+	# $TMUX to ignore local nesting, which tmux itself will prevent) and
+	# entering a new / existing session, set a flag so that additional
+	# configuration can adapt to the nested session, e.g. by defining the
+	# secondary prefix and changing colors.
+	set -- "$@" \; set @nested 1
+    fi
+
+    if [ -r "$TMUX_SESSION_CONF" ]; then
+	# Execute additional tmux configuration when entering a new / existing
+	# session - .tmux.conf is only read once when the server is started.
+	set -- "$@" \; source-file "$TMUX_SESSION_CONF"
+    fi
+fi
+
+exec tmux "$@"
