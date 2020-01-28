@@ -1,15 +1,28 @@
-#!/bin/sh
+#!/bin/bash
 
 printUsage()
 {
     cat <<HELPTEXT
-Activate the current Tmux pane and window (but not the terminal that Tmux is
+Activate the current tmux pane and window (but not the terminal that tmux is
 running in), so that whatever is happening there becomes visible.
+With --get-command, just print the (to be eval'd) command; this may be necessary
+because (under tmux 2.1) query of TMUX_WINDOW somehow yields the currently
+active window (not the on under which the command is running) when executed as
+part of a pipeline and another tmux window has been activated.
+OK:   sleep 1; tmux-activate-pane
+FAIL: sleep 1; echo | tmux-activate-pane
 HELPTEXT
-    printf 'Usage: %q %s\n' "$(basename "$1")" '[-?|-h|--help]'
+    printf 'Usage: %q %s\n' "$(basename "$1")" '[--get-command] [-?|-h|--help]'
+}
+executor=exec
+evalPrinter()
+{
+    local quotedCommand; printf -v quotedCommand '%q ' "$@"; quotedCommand=${quotedCommand% }
+    printf '%s\n' "$quotedCommand"
 }
 case "$1" in
     --help|-h|-\?)	shift; printUsage "$0"; exit 0;;
+    --get-command)	shift; executor='evalPrinter';;
 esac
 
 if [ ! "$TMUX" ]; then
@@ -21,4 +34,4 @@ fi
 # return to the current window that hosts the pane, and for that there's no
 # variable, unfortunately.
 TMUX_WINDOW=$(tmux display-message -p '#{window_id}') || exit $?
-exec tmux select-pane -t "$TMUX_PANE" \; select-window -t "$TMUX_WINDOW"
+$executor tmux select-pane -t "$TMUX_PANE" \; select-window -t "$TMUX_WINDOW"
