@@ -4,7 +4,7 @@ printShortUsage()
 {
     # Note: short followed by long option; if the user knows the short one, she can
     # skim the long one.
-    printf 'Usage: %q %s\n' "$(basename "$1")" '[-i|--interval INTERVAL[SUFFIX]] [-l|--line-interval LINE-NUM] [-w|--non-whitespace] [-s|--skip PATTERN [...]] [-m|--match PATTERN [...]] [-?|-h|--help]'
+    printf 'Usage: cat FILE [...] | %q %s\n' "$(basename "$1")" '[-i|--interval INTERVAL[SUFFIX]] [-l|--line-interval LINE-NUM] [-w|--non-whitespace] [-s|--skip PATTERN [...]] [-m|--match PATTERN [...]] [-?|-h|--help]'
 }
 printUsage()
 {
