@@ -43,6 +43,10 @@ HELPDESCRIPTION
 			    those that also match --skip PATTERN) are ignored.
 HELPTEXT
 }
+case "$1" in
+    --help|-h|-\?)	shift; printLongUsage "$0"; exit 0;;
+esac
+
 
 # XXX: When tmux-activate-pane is executed with another window active, the query
 # of TMUX_WINDOW yields the wrong (current) window when the command is part of a
