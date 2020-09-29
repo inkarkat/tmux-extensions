@@ -4,7 +4,7 @@ printShortUsage()
 {
     # Note: short followed by long option; if the user knows the short one, she can
     # skim the long one.
-    printf 'Usage: cat FILE [...] | %q %s\n' "$(basename "$1")" '[-i|--interval INTERVAL[SUFFIX]] [-l|--line-interval LINE-NUM] [-w|--non-whitespace] [-s|--skip PATTERN [...]] [-m|--match PATTERN [...]] [-?|-h|--help]'
+    printf 'Usage: cat FILE [...] | %q %s\n' "$(basename "$1")" '[-i|--interval INTERVAL[SUFFIX]] [-l|--line-interval LINE-NUM] [-w|--non-whitespace] [-s|--skip PATTERN [...]] [-m|--match PATTERN [...]] [-n|--count N|-1|--once] [-?|-h|--help]'
 }
 printUsage()
 {
@@ -41,6 +41,10 @@ HELPDESCRIPTION
     --match|-m PATTERN	    Only consider lines that match PATTERN for
 			    triggering COMMANDS execution; other lines (and
 			    those that also match --skip PATTERN) are ignored.
+    --count|-n N	    Stop reacting on new output after N executions of
+			    COMMAND.
+    --once|-1		    Only execute COMMAND once after the first
+			    observation of output.
 HELPTEXT
 }
 case "$1" in
