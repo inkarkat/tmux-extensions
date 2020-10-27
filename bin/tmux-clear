@@ -1,0 +1,29 @@
+#!/bin/bash
+
+printUsage()
+{
+    cat <<HELPTEXT
+Clear screen and history.
+HELPTEXT
+    echo
+    printf 'Usage: %q\n' "$(basename "$1")"
+}
+case "$1" in
+    --help|-h|-\?)	shift; printUsage "$0"; exit 0;;
+esac
+
+# Source: http://stackoverflow.com/questions/10543684/how-can-i-clear-scrollback-buffer-in-tmux
+# - Escape to leave insert mode
+# - C-l to clear the screen
+# - a to re-enter insert mode
+# Note: This only works with vi-mode editing ("set -o vi"), but not with emacs.
+#bind-key C send-keys -R \; send-keys Escape C-l a \; clear-history
+# To make it work for emacs (default) mode, we need to double the Escape, as a
+# fast Escape C-l combination has no effect, but another Escape seems to cancel
+# out the first. The literally inserted "a" can be cleaned via C-u (which also
+# works for vi, and is a no-op on an empty new command-line, anyway). To avoid
+# the beep on the already-empty command-line in vi-mode, just insert (another
+# for emacs) character first.
+
+# Duplicated to +/prefix\ +\ C ../../../../.tmux.conf
+exec tmux send-keys -R \; send-keys Escape Escape C-l a a C-u \; clear-history
