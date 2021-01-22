@@ -25,8 +25,11 @@ searchForArgument()
 	-e "x; /${searchArg}/{ s/^\n//; s/${searchArg}/${TMUX_KEYS_COLOR_MATCH_PREFIX}&${TMUX_KEYS_COLOR_MATCH_SUFFIX}/g; p }; s/.*//; x; \$!b begin" \
 
 }
-isSearch=
-[ $# -gt 0 ] && isSearch=t
+typeset -a searches=()
+for searchArg
+do
+    searches+=('| searchForArgument' "$searchArg")
+done
 
 typeset -a pager=("${PAGER:-less}" --RAW-CONTROL-CHARS); [ -t 1 ] || pager=()
-eval 'getKeyBindings' "${isSearch:+| searchForArgument \"\$@\"}" "${pager:+|}" '"${pager[@]}"'
+eval 'getKeyBindings' "${searches[@]}" "${pager:+|}" '"${pager[@]}"'
