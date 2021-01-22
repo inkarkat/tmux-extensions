@@ -1,5 +1,9 @@
 #!/bin/bash
 
+: ${TMUX_KEYS_COLOR_MATCH_PREFIX=[43m}
+: ${TMUX_KEYS_COLOR_MATCH_SUFFIX=[0m}
+[ -t 1 ] || unset ${!TMUX_KEYS_COLOR_@}
+
 typeset -a configFiles=()
 for conf in ~/.tmux.conf ~/.tmux/$(tmux -V | cut -d' ' -f2)/tmux.conf
 do
@@ -18,7 +22,7 @@ searchForArgument()
     sed -n \
 	-e :begin \
 	-e '$!{ H; $!{ N; s/^[^\n]*\n//; /^   [^[:space:]]/!b begin }; }' \
-	-e "x; /${searchArg}/{ s/^\n//; p }; s/.*//; x; \$!b begin" \
+	-e "x; /${searchArg}/{ s/^\n//; s/${searchArg}/${TMUX_KEYS_COLOR_MATCH_PREFIX}&${TMUX_KEYS_COLOR_MATCH_SUFFIX}/g; p }; s/.*//; x; \$!b begin" \
 
 }
 isSearch=
