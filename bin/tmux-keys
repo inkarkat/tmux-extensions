@@ -1,0 +1,16 @@
+#!/bin/bash
+
+typeset -a configFiles=()
+for conf in ~/.tmux.conf ~/.tmux/$(tmux -V | cut -d' ' -f2)/tmux.conf
+do
+    [ -e "$conf" ] || continue
+    configFiles+=("$conf")
+done
+
+getKeyBindings()
+{
+    sed -n -e '/^##[[:space:]]/{ s/^##/  /; p }' -- "${configFiles[@]}"
+}
+
+typeset -a pager=("${PAGER:-less}" --RAW-CONTROL-CHARS); [ -t 1 ] || pager=()
+eval 'getKeyBindings "$@"' "${pager:+|}" '"${pager[@]}"'
