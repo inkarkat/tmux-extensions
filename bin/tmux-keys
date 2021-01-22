@@ -12,5 +12,17 @@ getKeyBindings()
     sed -n -e '/^##[[:space:]]/{ s/^##/  /; p }' -- "${configFiles[@]}"
 }
 
+searchForArgument()
+{
+    local searchArg="${1//\//\\/}"; shift
+    sed -n \
+	-e :begin \
+	-e '$!{ H; $!{ N; s/^[^\n]*\n//; /^   [^[:space:]]/!b begin }; }' \
+	-e "x; /${searchArg}/{ s/^\n//; p }; s/.*//; x; \$!b begin" \
+
+}
+isSearch=
+[ $# -gt 0 ] && isSearch=t
+
 typeset -a pager=("${PAGER:-less}" --RAW-CONTROL-CHARS); [ -t 1 ] || pager=()
-eval 'getKeyBindings "$@"' "${pager:+|}" '"${pager[@]}"'
+eval 'getKeyBindings' "${isSearch:+| searchForArgument \"\$@\"}" "${pager:+|}" '"${pager[@]}"'
