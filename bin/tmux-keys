@@ -1,4 +1,5 @@
 #!/bin/bash
+set -o pipefail
 
 : ${TMUX_KEYS_COLOR_MATCH_PREFIX=[43m}
 : ${TMUX_KEYS_COLOR_MATCH_SUFFIX=[0m}
@@ -32,4 +33,4 @@ do
 done
 
 typeset -a pager=("${PAGER:-less}" --RAW-CONTROL-CHARS); [ -t 1 ] || pager=()
-eval 'getKeyBindings' "${searches[@]}" "${pager:+|}" '"${pager[@]}"'
+eval 'getKeyBindings' "${searches[@]}" '| outputOrError' "${pager:+|}" '"${pager[@]}"'
