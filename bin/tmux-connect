@@ -1,5 +1,6 @@
 #!/bin/sh
 
+# Duplicated to +/tmux-connect ~/Unixhome/bin/zzextensions/ssh-extensions/bin/ssht
 if tmux list-sessions | grep -vq ' (attached)$'; then
     exec tmux-wrapper attach-session \; choose-tree -s
 else
