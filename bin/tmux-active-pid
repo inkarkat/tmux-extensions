@@ -1,0 +1,17 @@
+#!/bin/bash
+# Source: https://superuser.com/a/879372/117820
+set -o pipefail
+
+printUsage()
+{
+    cat <<HELPTEXT
+Print the PID of the first process in the current pane.
+HELPTEXT
+    echo
+    printf 'Usage: %q %s\n' "$(basename "$1")" '[-?|-h|--help]'
+}
+case "$1" in
+    --help|-h|-\?)	shift; printUsage "$0"; exit 0;;
+esac
+
+tmux list-panes -F '#{pane_active} #{pane_pid}' | sed -n -e 's/^1 \(.*\)/\1/p'
