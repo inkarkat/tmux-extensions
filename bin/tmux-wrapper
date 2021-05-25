@@ -2,6 +2,10 @@
 
 readonly TMUX_SESSION_CONF=~/.tmux-session.conf
 
+case "$1" in
+    --help|-h|-\?)	shift; exec man tmux;;	# tmux only understands --help, not -h or -?, and only provides a minimal usage there, and puts that to stderr. Use the man page instead.
+esac
+
 if contains new-session "$@" || contains attach-session "$@"; then
     # XXX: The appended commands are executed on the attached / created session;
     # i.e. the user selection of choose-tree is ignored, and the command is
