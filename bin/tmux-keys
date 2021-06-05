@@ -5,6 +5,19 @@ set -o pipefail
 : ${TMUX_KEYS_COLOR_MATCH_SUFFIX=[0m}
 [ -t 1 ] || unset ${!TMUX_KEYS_COLOR_@}
 
+printUsage()
+{
+    cat <<HELPTEXT
+List custom tmux key bindings [matching all of SEARCH-PATTERN, a sed-style basic
+regular expresion].
+HELPTEXT
+    echo
+    printf 'Usage: %q %s\n' "$(basename "$1")" '[SEARCH-PATTERN ...] [-?|-h|--help]'
+}
+case "$1" in
+    --help|-h|-\?)	shift; printUsage "$0"; exit 0;;
+esac
+
 typeset -a configFiles=()
 for conf in ~/.tmux.conf ~/.tmux/$(tmux -V | cut -d' ' -f2)/tmux.conf
 do
