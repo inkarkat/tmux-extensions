@@ -1,0 +1,52 @@
+#!/bin/bash
+
+printUsage()
+{
+    cat <<HELPTEXT
+Displays a message in the tmux prompt.
+(Without overriding the 'display-time' tmux option.)
+HELPTEXT
+    echo
+    printf 'Usage: %q %s\n' "$(basename "$1")" '[-d|--duration MILLIS] [--] MESSAGE [...] [-?|-h|--help]'
+    printf 'Usage: cat MESSAGE | %q %s\n' "$(basename "$1")" '[-d|--duration MILLIS] [--] [-]'
+}
+duration=5000
+while [ $# -ne 0 ]
+do
+    case "$1" in
+	--help|-h|-\?)	shift; printUsage "$0"; exit 0;;
+	--duration|-d)	shift; duration="$1"; shift;;
+	--)		shift; break;;
+	-)		break;;
+	-*)		{ echo "ERROR: Unknown option \"$1\"!"; echo; printUsage "$0"; } >&2; exit 2;;
+	*)		break;;
+    esac
+done
+if [ $# -eq 0 -o "$1" = '-' ]; then
+    contents="$(</dev/stdin)"
+    [ -n "$contents" ] || exit 1
+else
+    contents="$*"
+    if [ -z "$contents" ]; then
+    	printUsage "$0" >&2
+    	exit 2
+    fi
+fi
+
+get_tmux_option()
+{
+    local option="$1"
+    local default_value="$2"
+    local option_value
+    option_value=$(tmux show-option -gqv "$option")
+    if [ -z "$option_value" ]; then
+	echo "$default_value"
+    else
+	echo "$option_value"
+    fi
+}
+
+savedDisplayTime="$(get_tmux_option display-time 750)"
+tmux set-option -gq display-time "$duration"
+    tmux display-message "$contents"
+tmux set-option -gq display-time "$savedDisplayTime"
