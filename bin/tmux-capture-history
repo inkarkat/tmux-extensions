@@ -1,0 +1,15 @@
+#!/bin/bash
+
+printUsage()
+{
+    cat <<HELPTEXT
+Save the complete pane history to a file.
+HELPTEXT
+    echo
+    printf 'Usage: %q %s\n' "$(basename "$1")" '[-f|--foo bar] [--] [FILE ...] [-?|-h|--help]'
+}
+case "$1" in
+    --help|-h|-\?)	shift; printUsage "$0"; exit 0;;
+esac
+
+exec ~/.tmux.overlay/plugins/tmux-logging/scripts/save_complete_history.sh
