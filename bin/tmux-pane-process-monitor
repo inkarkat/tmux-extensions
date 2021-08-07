@@ -1,0 +1,38 @@
+#!/bin/bash
+
+printUsage()
+{
+    cat <<HELPTEXT
+Show the first process in the current pane and its children repeatedly in a split pane.
+HELPTEXT
+    echo
+    printf 'Usage: %q %s\n' "$(basename "$1")" '[-?|-h|--help]'
+    echo
+    cat <<HELPTEXT
+Show the first process of PANE-INDEX (0-based) and its children repeatedly in the current pane.
+HELPTEXT
+    echo
+    printf 'Usage: %q %s\n' "$(basename "$1")" 'PANE-INDEX'
+}
+case "$1" in
+    --help|-h|-\?)	shift; printUsage "$0"; exit 0;;
+esac
+
+case $# in
+    0)
+	currentPanePid="$(tmux-active-pid)" || exit $?
+	exec tmux split-window -v watch pt --pid "${currentPanePid:?}"
+	;;
+    1)
+	targetPanePid="$(tmux list-panes -F '#{pane_index} #{pane_pid}' | sed -n -e "s/^${1:?} \(.*\)/\1/p")"
+	if [ -z "$targetPanePid" ]; then
+	    printf >&2 'ERROR: No pane #%s.\n' "$1"
+	    exit 1
+	fi
+	exec watch pt --pid "$targetPanePid"
+	;;
+    *)
+	printUsage "$0" >&2
+	exit 2
+	;;
+esac
