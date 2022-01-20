@@ -9,7 +9,7 @@ tmux()
 	tmux-wrapper ${TMUX_DEFAULT_COMMAND:-new-session}
     elif type ${BASH_VERSION:+-t} "$tmuxAlias" >/dev/null 2>&1; then
 	shift
-	eval $tmuxAlias '"$@"'
+	$tmuxAlias "$@"
     else
 	tmux-wrapper "$@"
     fi
