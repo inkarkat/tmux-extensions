@@ -3,7 +3,7 @@ set -o pipefail
 
 : ${TMUX_KEYS_COLOR_MATCH_PREFIX=[43m}
 : ${TMUX_KEYS_COLOR_MATCH_SUFFIX=[0m}
-[ -t 1 ] || unset ${!TMUX_KEYS_COLOR_@}
+[ -t 1 ] || unset "${!TMUX_KEYS_COLOR_@}"
 
 printUsage()
 {
