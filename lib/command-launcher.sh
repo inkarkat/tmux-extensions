@@ -1,6 +1,9 @@
 #!/bin/bash
 set -o pipefail
 
+commandName="$(commandName --no-interpreter -- "$@")"
+tmux rename-window "$commandName"
+
 SECONDS=0
     "$@"
 [ $SECONDS -gt ${TMUXCOMMANDLAUNCHER_PROMPT_TIME:-2} ] || userprompt
