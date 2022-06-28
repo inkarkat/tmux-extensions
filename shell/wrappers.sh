@@ -16,7 +16,8 @@ tmux()
 	typeset scriptDir="$([ "${BASH_SOURCE[0]}" ] && dirname -- "${BASH_SOURCE[0]}" || exit 3)"
 	[ -d "$scriptDir" ] || { echo >&2 'ERROR: Cannot determine script directory!'; exit 3; }
 	typeset projectDir="${scriptDir}/.."
-	tmux-wrapper set status on \; new-window -c "#{pane_current_path}" "${projectDir}/lib/command-launcher.sh" "$@"
+	typeset commandName="$(commandName --no-interpreter -- "$@")"
+	tmux-wrapper set status on \; new-window -c "#{pane_current_path}" ${commandName:+-n "$commandName" -e "commandName=$commandName"} "${projectDir}/lib/command-launcher.sh" "$@"
     else
 	tmux-wrapper "$@"
     fi
