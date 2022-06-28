@@ -17,7 +17,7 @@ tmux()
 	[ -d "$scriptDir" ] || { echo >&2 'ERROR: Cannot determine script directory!'; exit 3; }
 	typeset projectDir="${scriptDir}/.."
 	typeset commandName="$(commandName --no-interpreter -- "$@")"
-	tmux-wrapper set status on \; new-window -c "#{pane_current_path}" ${commandName:+-n "$commandName"} "${projectDir}/lib/command-launcher.sh" "$@"
+	tmux-wrapper set status on \; new-window -c "#{pane_current_path}" ${commandName:+-n "$commandName" -e "commandName=$commandName"} "${projectDir}/lib/command-launcher.sh" "$@"
     else
 	tmux-wrapper "$@"
     fi
