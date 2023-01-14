@@ -1,3 +1,5 @@
+#!/bin/bash source-this-script
+
 # START tmux completion
 # This file is in the public domain
 # See: http://www.debian-administration.org/articles/317 for how to write more.
@@ -97,6 +99,33 @@ _tmux()
     return 0
 
 }
-complete -F _tmux tmux
-
 # END tmux completion
+
+_tmuxEx()
+{
+    local IFS=$'\n'
+    typeset -a aliases=($(pathglob 'tmux-*' 2>/dev/null))
+    aliases=("${aliases[@]/#tmux-/}")
+
+    if [ $COMP_CWORD -ge 2 ] && contains "${COMP_WORDS[1]% }" "${aliases[@]}"; then
+	local tmuxAlias="_tmux_${COMP_WORDS[1]//-/_}"
+	# Completing an alias; delegate to its custom completion function (if
+	# available)
+	if type -t "${tmuxAlias% }" >/dev/null; then
+	    COMP_WORDS=("tmux-${COMP_WORDS[1]% }" "${COMP_WORDS[@]:2}")
+	    let COMP_CWORD-=1
+	    "${tmuxAlias% }" "${COMP_WORDS[0]}" "${COMP_WORDS[COMP_CWORD]}" "${COMP_WORDS[COMP_CWORD-1]}"
+	    return $?
+	fi
+    fi
+    unset IFS
+
+    _tmux "$@"
+
+    if [ $COMP_CWORD -eq 1 ]; then
+	# Also offer aliases (tmux-aliasname, callable via my tmux wrapper
+	# function as tmux aliasname).
+	readarray -O ${#COMPREPLY[@]} -t COMPREPLY < <(compgen -W "${aliases[*]}" -X "!${2}*")
+    fi
+}
+complete -F _tmuxEx tmux
