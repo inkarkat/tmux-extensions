@@ -22,7 +22,7 @@ done
 [ $# -eq 0 ] && { printUsage "$0" >&2; exit 2; }
 
 if [ ! "$captureFilespec" ]; then
-    captureFilespec=$(mktemp --tmpdir "$(basename -- "$0")-XXXXXX" 2>/dev/null || echo "${TEMP:-/tmp}/$(basename -- "$0").$$$RANDOM")
+    captureFilespec="$(mktemp --tmpdir "$(basename -- "$0")-XXXXXX" 2>/dev/null || echo "${TMPDIR:-/tmp}/$(basename -- "$0").$$$RANDOM")"
     printf '%s\n' "$captureFilespec"
 fi
 
