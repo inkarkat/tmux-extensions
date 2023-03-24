@@ -95,7 +95,7 @@ _tmux()
     unlink-window \
     up-pane"
 
-    COMPREPLY=($(compgen -W "${opts}" -- ${cur}))
+    readarray -t COMPREPLY < <(compgen -W "${opts}" -- ${cur})
     return 0
 
 }
@@ -104,7 +104,7 @@ _tmux()
 _tmuxEx()
 {
     local IFS=$'\n'
-    typeset -a aliases=($(pathglob 'tmux-*' 2>/dev/null))
+    typeset -a aliases=(); readarray -t aliases < <(pathglob 'tmux-*' 2>/dev/null)
     aliases=("${aliases[@]/#tmux-/}")
 
     if [ $COMP_CWORD -ge 2 ] && contains "${COMP_WORDS[1]% }" "${aliases[@]}"; then
