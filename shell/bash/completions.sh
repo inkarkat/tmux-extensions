@@ -104,7 +104,7 @@ _tmux()
 _tmuxEx()
 {
     local IFS=$'\n'
-    typeset -a aliases=(); readarray -t aliases < <(pathglob 'tmux-*' 2>/dev/null)
+    typeset -a aliases=(); readarray -t aliases < <(compgen -A command -- 'tmux-')
     aliases=("${aliases[@]/#tmux-/}")
 
     if [ $COMP_CWORD -ge 2 ] && contains "${COMP_WORDS[1]% }" "${aliases[@]}"; then
