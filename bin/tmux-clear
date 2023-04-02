@@ -9,7 +9,7 @@ printUsage()
 ${pluginImplementation:+Save history to $XDG_RUNTIME_DIR/tmux, }clear screen and history.
 HELPTEXT
     echo
-    printf 'Usage: %q\n' "$(basename "$1")"
+    printf 'Usage: %q %s\n' "$(basename "$1")" "${pluginImplementation:+[--no-clear] }[-?|-h|--help]"
 }
 case "$1" in
     --help|-h|-\?)	shift; printUsage "$0"; exit 0;;
@@ -17,7 +17,7 @@ esac
 
 # Duplicated to ../../../../.tmux.overlay/plugins/tmux-logging-on-clear/scripts/save_complete_history_and_clear.sh
 if [ -n "$pluginImplementation" ]; then
-    exec "$pluginImplementation"
-else
+    exec "$pluginImplementation" "$@"
+elif [ "$1" != --no-clear ]; then
     exec tmux send-keys -R \; send-keys Escape Escape C-l a a C-u \; clear-history
 fi
