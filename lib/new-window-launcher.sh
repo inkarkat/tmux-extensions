@@ -7,7 +7,7 @@ SECONDS=0
 
     "$@"
 
-if [ $SECONDS -le ${TMUXCOMMANDLAUNCHER_PROMPT_TIME:-2} ]; then
+if [ $SECONDS -le ${TMUX_NEWWINDOWLAUNCHER_PROMPT_TIME:-2} ]; then
     # Indicate inactive COMMAND by wrapping in (...).
     [ -n "$commandName" -a "$windowName" = "$commandName" -a -n "$windowId" ] && \
 	tmux rename-window -t "$windowId" "(${commandName})"
