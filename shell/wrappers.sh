@@ -13,8 +13,8 @@ tmux()
 	shift
 	eval $tmuxAlias '"$@"'	# Need eval for shell aliases.
     elif type ${BASH_VERSION:+-t} -- "$1" >/dev/null; then
-	typeset scriptDir="$([ "${BASH_SOURCE[0]}" ] && dirname -- "${BASH_SOURCE[0]}" || exit 3)"
-	[ -d "$scriptDir" ] || { echo >&2 'ERROR: Cannot determine script directory!'; exit 3; }
+	typeset scriptDir="$(dirname -- "$(command -v tmux-wrapper)")"
+	[ -d "$scriptDir" ] || { echo >&2 'ERROR: Cannot determine script directory!'; return 3; }
 	typeset projectDir="${scriptDir}/.."
 	typeset commandName="$(commandName --no-interpreter -- "$@")"
 	tmux-wrapper set status on \; new-window -c "#{pane_current_path}" ${commandName:+-n "$commandName" -e "commandName=$commandName"} "${projectDir}/lib/new-window-launcher.sh" "$@"
