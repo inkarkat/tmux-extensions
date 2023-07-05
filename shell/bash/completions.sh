@@ -123,9 +123,14 @@ _tmuxEx()
     _tmux "$@"
 
     if [ $COMP_CWORD -eq 1 ]; then
-	# Also offer aliases (tmux-aliasname, callable via my tmux wrapper
-	# function as tmux aliasname).
-	readarray -O ${#COMPREPLY[@]} -t COMPREPLY < <(compgen -W "${aliases[*]}" -X "!${2}*")
+	readarray -O ${#COMPREPLY[@]} -t COMPREPLY < <(
+	    # Also offer (exported) shell functions and shell commands that my
+	    # tmux() wrapper function executes in a new window.
+	    compgen -A function -A command "${COMP_WORDS[COMP_CWORD]}"
+	    # Also offer aliases (tmux-aliasname, callable via my tmux wrapper
+	    # function as tmux aliasname).
+	    compgen -W "${aliases[*]}" -X "!${2}*"
+	)
     fi
 }
 complete -F _tmuxEx tmux
