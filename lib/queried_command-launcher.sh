@@ -17,4 +17,4 @@ TERM_COLORS=256 \
 
 readonly saveHistoryPluginHook=~/.tmux/plugins/tmux-logging-on-clear/scripts/save_complete_history.sh
 [ ! -x "$saveHistoryPluginHook" ] \
-    || HISTORY_NAME_OVERRIDE="${commandName:-command}" "$saveHistoryPluginHook"
+    || HISTORY_NAME_OVERRIDE="${commandName:-command}" "$saveHistoryPluginHook" tmux display-message
