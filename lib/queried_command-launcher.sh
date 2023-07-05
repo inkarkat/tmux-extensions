@@ -8,8 +8,13 @@ queriedCommand="$(tmux show-options -gv @queried_command)"
 defaultCommand="$(tmux show-options -Aqv default-command)"
 [ -z "$defaultCommand" ] || [ "$defaultCommand" != "$(tmux show-options -Aqv default-shell)" ] || defaultCommand=''
 
+commandName="$(commandName --eval --no-interpreter -- "$queriedCommand")"
+
 PGID=$$ \
 TERM_COLORS=256 \
-    exec \
-	ensurePrompting --prompt 'Press any key to dismiss...' -- \
-	    runWithPrompt --command "${defaultCommand}${defaultCommand:+ }$queriedCommand"
+    ensurePrompting --prompt 'Press any key to dismiss...' -- \
+	runWithPrompt --command "${defaultCommand}${defaultCommand:+ }$queriedCommand"
+
+readonly saveHistoryPluginHook=~/.tmux/plugins/tmux-logging-on-clear/scripts/save_complete_history.sh
+[ ! -x "$saveHistoryPluginHook" ] \
+    || HISTORY_NAME_OVERRIDE="${commandName:-command}" "$saveHistoryPluginHook"
