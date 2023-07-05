@@ -2,8 +2,11 @@
 
 # Allow definition of tmux aliases (e.g. "tmux foo") by putting an executable
 # "tmux-foo" somewhere in the PATH.
-# Execute a passed COMMAND in a new tmux window (that automatically closes after
-# COMMAND concludes.)
+## tmux SHELL-COMMAND	Execute a passed SHELL-COMMAND in a new tmux window
+##			(that automatically closes after SHELL-COMMAND
+##			concludes.) SHELL-COMMAND can later also be re-executed
+##			via my mappings that recall the queried command
+##			(prefix + g* / prefix + g-).
 tmux()
 {
     typeset tmuxAlias="tmux-$1"
@@ -16,8 +19,8 @@ tmux()
 	typeset scriptDir="$(dirname -- "$(command -v tmux-wrapper)")"
 	[ -d "$scriptDir" ] || { echo >&2 'ERROR: Cannot determine script directory!'; return 3; }
 	typeset projectDir="${scriptDir}/.."
-	typeset commandName="$(commandName --no-interpreter -- "$@")"
-	tmux-wrapper set status on \; new-window -c "#{pane_current_path}" ${commandName:+-n "$commandName" -e "commandName=$commandName"} "${projectDir}/lib/new-window-launcher.sh" "$@"
+	printf -v quotedCommand '%q ' "$@"
+	tmux-wrapper set status on \; set -g @queried_command "${quotedCommand% }" \; new-window -c "#{pane_current_path}" "${projectDir}/lib/new-window-launcher.sh"
     else
 	tmux-wrapper "$@"
     fi
