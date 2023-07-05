@@ -2,9 +2,11 @@
 
 # Allow definition of tmux aliases (e.g. "tmux foo") by putting an executable
 # "tmux-foo" somewhere in the PATH.
-# Execute a passed SHELL-COMMAND in a new tmux window (that automatically closes
-# after SHELL-COMMAND concludes.) SHELL-COMMAND can later also be re-executed
-# via my mappings that recall the queried command (prefix + g* / prefix + g-).
+## tmux SHELL-COMMAND	Execute a passed SHELL-COMMAND in a new tmux window
+##			(that automatically closes after SHELL-COMMAND
+##			concludes.) SHELL-COMMAND can later also be re-executed
+##			via my mappings that recall the queried command
+##			(prefix + g* / prefix + g-).
 tmux()
 {
     typeset tmuxAlias="tmux-$1"

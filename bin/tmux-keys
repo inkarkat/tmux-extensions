@@ -1,6 +1,10 @@
 #!/bin/bash
 set -o pipefail
 
+readonly scriptDir="$([ "${BASH_SOURCE[0]}" ] && dirname -- "${BASH_SOURCE[0]}" || exit 3)"
+[ -d "$scriptDir" ] || { echo >&2 'ERROR: Cannot determine script directory!'; exit 3; }
+readonly projectDir="${scriptDir}/.."
+
 : ${TMUX_KEYS_COLOR_MATCH_PREFIX=[43m}
 : ${TMUX_KEYS_COLOR_MATCH_SUFFIX=[0m}
 [ -t 1 ] || unset "${!TMUX_KEYS_COLOR_@}"
@@ -19,7 +23,7 @@ case "$1" in
 esac
 
 typeset -a configFiles=()
-for conf in ~/.tmux.conf ~/.tmux/$(tmux -V | cut -d' ' -f2)/tmux.conf
+for conf in ~/.tmux.conf ~/.tmux/$(tmux -V | cut -d' ' -f2)/tmux.conf "${projectDir}/shell/wrappers.sh"
 do
     [ -e "$conf" ] || continue
     configFiles+=("$conf")
