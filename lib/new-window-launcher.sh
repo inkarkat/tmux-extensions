@@ -14,13 +14,13 @@ windowId="$(tmux display-message -p "#{window_id}" 2>/dev/null)"
 typeset -a ensurePromptingArgs=()
 commandName="$(commandName --eval --no-interpreter -- "$queriedCommand")"
 if [ -n "$commandName" ]; then
-    tmux rename-window "$commandName"
+    tmux rename-window -- "$commandName"
 
     # Indicate inactive COMMAND by wrapping in (...) (but only if the COMMAND
     # did not change it).
     printf -v quotedCommandName '%q' "$commandName"
     printf -v quotedWindowdId '%q' "$windowId"
-    ensurePromptingArgs+=(--prompt-command "[ \"\$(tmux display-message -t $quotedWindowdId -p '#{window_name}' 2>/dev/null)\" = $quotedCommandName ] && tmux rename-window '('$quotedCommandName')'")
+    ensurePromptingArgs+=(--prompt-command "[ \"\$(tmux display-message -t $quotedWindowdId -p '#{window_name}' 2>/dev/null)\" = $quotedCommandName ] && tmux rename-window -- '('$quotedCommandName')'")
 fi
 
 PGID=$$ \
