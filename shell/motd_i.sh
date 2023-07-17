@@ -2,6 +2,8 @@
 
 # Also show the message-of-the day on the very first Tmux session.
 
+[ "${TMUX:-}" ] || return
+
 # The first login shell has already shown the MOTD.
 shopt -q login_shell 2>/dev/null && return
 

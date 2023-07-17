@@ -1,5 +1,7 @@
 #!/bin/sh source-this-script
 
+[ "${TMUX:-}" ] || return
+
 _PS1TmuxHook()
 {
     # tmux doesn't have event hooks yet; often, we can extend built-in mappings
