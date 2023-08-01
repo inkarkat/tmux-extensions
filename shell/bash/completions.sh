@@ -107,14 +107,14 @@ _tmuxEx()
     typeset -a aliases=(); readarray -t aliases < <(compgen -A command -- 'tmux-')
     aliases=("${aliases[@]/#tmux-/}")
 
-    if [ $COMP_CWORD -ge 2 ] && contains "${COMP_WORDS[1]% }" "${aliases[@]}"; then
+    if [ $COMP_CWORD -ge 2 ] && contains "${COMP_WORDS[1]}" "${aliases[@]}"; then
 	local tmuxAlias="_tmux_${COMP_WORDS[1]//-/_}"
 	# Completing an alias; delegate to its custom completion function (if
 	# available)
-	if type -t "${tmuxAlias% }" >/dev/null; then
-	    COMP_WORDS=("tmux-${COMP_WORDS[1]% }" "${COMP_WORDS[@]:2}")
+	if type -t "$tmuxAlias" >/dev/null; then
+	    COMP_WORDS=("tmux-${COMP_WORDS[1]}" "${COMP_WORDS[@]:2}")
 	    let COMP_CWORD-=1
-	    "${tmuxAlias% }" "${COMP_WORDS[0]}" "${COMP_WORDS[COMP_CWORD]}" "${COMP_WORDS[COMP_CWORD-1]}"
+	    "$tmuxAlias" "${COMP_WORDS[0]}" "${COMP_WORDS[COMP_CWORD]}" "${COMP_WORDS[COMP_CWORD-1]}"
 	    return $?
 	fi
     fi
