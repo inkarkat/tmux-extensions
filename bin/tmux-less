@@ -25,8 +25,12 @@ if [ -z "$TMUX" ]; then
     exit 1
 fi
 
-[ $# -gt 0 ] || set -- "$(tmux show-options -Aqv default-shell)"
-printf -v quotedCommandLine ' %q' "$@"
+case $# in
+    0)	set -- "$(tmux show-options -Aqv default-shell)";;
+    # tmux takes a single argument as a COMMAND-LINE, and multiple arguments as a SIMPLECOMMAND.
+    1)	quotedCommandLine="$1";;
+    *)	printf -v quotedCommandLine ' %q' "$@";;
+esac
 
 # Use a separate file to transfer the exit status of the new shell back to this script.
 statusFilespec="$(mktemp --tmpdir "$(basename -- "$0")-XXXXXX" 2>/dev/null || echo "${TMPDIR:-/tmp}/$(basename -- "$0").$$$RANDOM")"
