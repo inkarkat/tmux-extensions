@@ -1,0 +1,60 @@
+#!/bin/bash
+
+printUsage()
+{
+    cat <<HELPTEXT
+Run shell-command / a new shell in a vertically split new pane (when running in
+tmux) that (during the runtime of the command) takes up almost all the space of
+the current tmux pane, and wait for its completion.
+Leading and trailing output from that new pane will be copied to the current
+pane, so that an excerpt of the command's output (or even its entirety if small
+enough) is kept (and the remainder available via a capture file), but only so
+much that it fits the terminal height.
+Returns the exit status of the shell-command.
+HELPTEXT
+    echo
+    printf 'Usage: %q %s\n' "$(basename "$1")" '[shell-command] [-?|-h|--help]'
+}
+
+case "$1" in
+    --help|-h|-\?)	shift; printUsage "$0"; exit 0;;
+esac
+
+if [ -z "$TMUX" ]; then
+    echo >&2 'Not in a TMUX session!'
+    exit 1
+fi
+
+[ $# -gt 0 ] || set -- "$(tmux show-options -Aqv default-shell)"
+printf -v quotedCommandLine ' %q' "$@"
+
+# Use a separate file to transfer the exit status of the new shell back to this script.
+statusFilespec="$(mktemp --tmpdir "$(basename -- "$0")-XXXXXX" 2>/dev/null || echo "${TMPDIR:-/tmp}/$(basename -- "$0").$$$RANDOM")"
+printf -v quotedStatus 'echo $? > %q' "$statusFilespec"
+
+# Capture as a smartless file, so that it can be recalled via its "mr" command.
+# Short command outputs will have trailing empty lines to fill up the pane's
+# height; remove those and any trailing whitespace in general.
+captureFilespec="$(smartless --get-filespec)" || exit 3
+printf -v quotedCapture 'tmux capture-pane -J -S - -p | truncate-trailing > %q' "$captureFilespec"
+
+# When the new shell exits, capture its exit status, the pane's output, and then wake up this script.
+printf -v trapCommand 'trap %q EXIT' "${quotedStatus}; ${quotedCapture}; kill -SIGUSR1 $$"
+
+# When we're outputting the head and tail of the pane's output, the enlargement
+# of the original pane may not yet have been reflected in the $LINES variable.
+# Save it so that we can override the value in the smartless invocation.
+originalLines=$LINES
+onCompletion()
+{
+    < "$statusFilespec" read -r status
+    [ "${DEBUG:-}" ] || rm -f -- "$statusFilespec" 2>/dev/null
+    LINES=$originalLines smartless --truncate-only "$captureFilespec"
+    kill %% # Stop the sleep job that kept this script running.
+    exit ${status:-3}
+}
+trap onCompletion SIGUSR1
+
+tmux split-window -p 100 -v -c "#{pane_current_path}" "${trapCommand};${quotedCommandLine}"
+
+sleep infinity & wait	# The new tmux pane command runs asynchronously; we need to wait until we're informed about its exit.
