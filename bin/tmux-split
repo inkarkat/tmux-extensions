@@ -1,0 +1,28 @@
+#!/bin/bash
+
+printUsage()
+{
+    cat <<HELPTEXT
+Run shell-command / a new shell in a vertically split new pane (when running in
+tmux) that (during the runtime of the command) takes up almost all the space of
+the current tmux pane.
+HELPTEXT
+    echo
+    printf 'Usage: %q %s\n' "$(basename "$1")" '[shell-command] [-?|-h|--help]'
+}
+
+case "$1" in
+    --help|-h|-\?)	shift; printUsage "$0"; exit 0;;
+esac
+
+if [ -z "$TMUX" ]; then
+    # tmux takes a single argument as a COMMAND-LINE, and multiple arguments as a SIMPLECOMMAND.
+    if [ $# -eq 1 ]; then
+	eval "$1"; exit $?
+    else
+	exec "$@"
+    fi
+fi
+
+[ $# -gt 0 ] || set -- "$(tmux show-options -Aqv default-shell)"
+exec tmux split-window -p 100 -v -c "#{pane_current_path}" "$@"
