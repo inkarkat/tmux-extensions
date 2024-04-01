@@ -25,4 +25,4 @@ if [ -z "$TMUX" ]; then
 fi
 
 [ $# -gt 0 ] || set -- "$(tmux show-options -Aqv default-shell)"
-exec tmux split-window -p 100 -v -c "#{pane_current_path}" "$@"
+eval "exec tmux split-window -p 100 -v $(customExports --ignore-undefined --prefix '-e ' | tr $'\n' ' ')" '-c "#{pane_current_path}" "$@"'
