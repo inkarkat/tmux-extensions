@@ -1,0 +1,30 @@
+#!/bin/bash
+
+printUsage()
+{
+    cat <<HELPTEXT
+Show tmux PROMPT and wait for acknowledgement.
+HELPTEXT
+    echo
+    printf 'Usage: %q %s\n' "$(basename "$1")" '[--] [PROMPT] [-?|-h|--help]'
+}
+
+case "$1" in
+    --help|-h|-\?)	shift; printUsage "$0"; exit 0;;
+    --)			shift;;
+esac
+if [ $# -gt 1 ]; then
+    printUsage "$0" >&2
+    exit 2
+fi
+promptText="${1-Press any key to continue...}"
+
+onConfirmation()
+{
+    kill %% # Stop the sleep job that kept this script running.
+    exit 0
+}
+trap onConfirmation SIGUSR1
+
+tmux command-prompt -1 -p "$promptText" "run-shell \"$(which kill) -SIGUSR1 $$\""   # XXX: run-shell needs full path to the command.
+sleep infinity & wait	# The new tmux pane command runs asynchronously; we need to wait until we're informed about its exit.
