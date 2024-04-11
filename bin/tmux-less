@@ -40,10 +40,12 @@ printf -v quotedStatus 'echo $? > %q' "$statusFilespec"
 # Short command outputs will have trailing empty lines to fill up the pane's
 # height; remove those and any trailing whitespace in general.
 captureFilespec="$(smartless --get-filespec)" || exit 3
-printf -v quotedCapture 'tmux capture-pane -J -S - -p | truncate-trailing > %q' "$captureFilespec"
+printf -v quotedCapture -- '-J -S - -p | truncate-trailing > %q' "$captureFilespec"
 
 # When the new shell exits, capture its exit status, the pane's output, and then wake up this script.
-printf -v trapCommand 'trap %q EXIT' "${quotedStatus}; ${quotedCapture}; kill -SIGUSR1 $$"
+printf -v trapCommand 'trap %q\;\ tmux\ capture-pane\ -t\ "$(tmux display-message -p "#{pane_id}")"\ %q EXIT' \
+	"$quotedStatus" \
+	"${quotedCapture}; kill -SIGUSR1 $$"
 
 # When we're outputting the head and tail of the pane's output, the enlargement
 # of the original pane may not yet have been reflected in the $LINES variable.
