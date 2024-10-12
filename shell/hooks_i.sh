@@ -1,6 +1,6 @@
 #!/bin/sh source-this-script
 
-[ "${TMUX:-}" ] || return
+[ -n "${TMUX:-}" ] || return
 
 _PS1TmuxHook()
 {

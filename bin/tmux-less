@@ -21,7 +21,7 @@ case "$1" in
 esac
 
 if [ -z "$TMUX" ]; then
-    echo >&2 'Not in a TMUX session!'
+    echo >&2 'ERROR: Not in a tmux session.'
     exit 1
 fi
 

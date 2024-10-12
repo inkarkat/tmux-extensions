@@ -1,4 +1,4 @@
-# Tmux CLI extensions
+# tmux CLI extensions
 
 _Additions and tweaks to the tmux CLI._
 

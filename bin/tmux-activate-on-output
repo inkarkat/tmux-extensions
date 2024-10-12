@@ -19,7 +19,7 @@ printLongUsage()
     # It is printed to stdout to allow paging with 'more'.
     cat <<HELPDESCRIPTION
 Whenever there is output (but at least INTERVAL (default: 1 second) or LINE-NUM
-apart), activate the current Tmux pane and window.
+apart), activate the current tmux pane and window.
 HELPDESCRIPTION
     echo
     printShortUsage "$1"
