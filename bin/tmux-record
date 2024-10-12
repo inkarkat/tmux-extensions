@@ -1,0 +1,35 @@
+#!/bin/bash
+shopt -qs extglob
+
+printUsage()
+{
+    cat <<HELPTEXT
+Record the most recently used (unattached) tmux session / target-session using
+asciinema until the session is detached (prefix + d) or exits.
+HELPTEXT
+    echo
+    printf 'Usage: %q %s\n' "$(basename "$1")" '[-dErx] [-c working-directory] [-t target-session] [ASCIINEMA-ARGS ...] [FILE.cast] [-?|-h|--help]'
+}
+
+typeset -a asciinemaArgs=()
+typeset -a tmuxAttachArgs=()
+while [ $# -ne 0 ]
+do
+    case "$1" in
+	--help|-h|-\?)	shift; printUsage "$0"; exit 0;;
+
+	-+([dErx]))	tmuxAttachArgs+=("$1"); shift;;
+	-[ct])		tmuxAttachArgs+=("$1" "${2?}"); shift; shift;;
+	--)		asciinemaArgs+=("$1"); shift; break;;
+	*)		asciinemaArgs+=("$1"); shift;;
+    esac
+done
+
+if [ -n "$TMUX" ]; then
+    echo >&2 'ERROR: This must be launched from a non-tmux terminal.'
+    exit 1
+fi
+
+quotedTmuxAttachArgs=; [ ${#tmuxAttachArgs[@]} -eq 0 ] || printf -v quotedTmuxAttachArgs ' %q' "${tmuxAttachArgs[@]}"
+
+exec asciinema rec --command "tmux attach${quotedTmuxAttachArgs}" "${asciinemaArgs[@]}" "$@"
