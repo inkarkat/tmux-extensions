@@ -8,7 +8,7 @@ Record the most recently used (unattached) tmux session / target-session using
 asciinema until the session is detached (prefix + d) or exits.
 HELPTEXT
     echo
-    printf 'Usage: %q %s\n' "$(basename "$1")" '[-dErx] [-c working-directory] [-t target-session] [ASCIINEMA-ARGS ...] [FILE.cast] [-?|-h|--help]'
+    printf 'Usage: %q %s\n' "$(basename "$1")" '[-dErx] [-c working-directory] [-t target-session] [ASCIINEMA-ARGS ...] [--append|--overwrite] [FILE.cast] [-?|-h|--help]'
 }
 
 typeset -a asciinemaArgs=()
