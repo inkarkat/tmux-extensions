@@ -93,7 +93,11 @@ unlink-window
 up-pane
 '
 
-    readarray -t COMPREPLY < <(compgen -W "${opts}" -- "$cur")
+    if [ "$prev" = -t ]; then
+	readarray -t COMPREPLY < <(compgen -W "$(tmux list-sessions -F '#{session_name}')" -- "$cur")
+    else
+	readarray -t COMPREPLY < <(compgen -W "${opts}" -- "$cur")
+    fi
     return 0
 
 }
