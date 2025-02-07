@@ -36,5 +36,4 @@ case "$1" in
     --help|-h|-\?)	shift; printLongUsage "$0"; exit 0;;
 esac
 
-tmux list-panes -F '#{pane_active} #{pane_pid}' "$@" \
-    | sed -n -e 's/^1 \(.*\)/\1/p'
+exec tmux list-panes -F '#{pane_pid}' -f '#{pane_active}' "$@"
