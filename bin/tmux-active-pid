@@ -6,7 +6,7 @@ printShortUsage()
 {
     # Note: short followed by long option; if the user knows the short one, she can
     # skim the long one.
-    printf 'Usage: %q %s\n' "$(basename "$1")" '[-a|-s [-t target-session]] [-?|-h|--help]'
+    printf 'Usage: %q %s\n' "$(basename "$1")" '[-a|-s [-t target-session]] [-v|--invert-match] [-?|-h|--help]'
 }
 printUsage()
 {
@@ -29,11 +29,32 @@ HELPDESCRIPTION
     -a			Consider all panes on the server.
     -s			Consider all panes of the current session.
     -t target-session	Use target-session instead of the current one.
+    --invert-match|-v	Print all PIDs of first processes in all other panes
+			(and windows if -a or -s are given) except the current
+			one.
 HELPTEXT
 }
 
-case "$1" in
-    --help|-h|-\?)	shift; printLongUsage "$0"; exit 0;;
-esac
+typeset -a tmuxArgs=()
+typeset -a tmuxTargetArgs=()
+isInvert=
+while [ $# -ne 0 ]
+do
+    case "$1" in
+	--help|-h|-\?)	shift; printLongUsage "$0"; exit 0;;
+	-t)		tmuxTargetArgs+=("$1" "${2?}"); shift; shift;;
+	--invert-match|-v)
+			shift; isInvert=t;;
+	--)		tmuxArgs+=("$1"); shift; break;;
+	*)		tmuxArgs+=("$1"); shift;;
+    esac
+done
 
-exec tmux list-panes -F '#{pane_pid}' -f '#{pane_active}' "$@"
+if [ "$isInvert" ]; then
+    currentWindowId="$(tmux display-message -p '#{window_id}' "${tmuxTargetArgs[@]}")" || exit 3
+    typeset -a tmuxFilterArgs=(-f "#{||:#{!=:#{window_id},${currentWindowId}},#{?pane_active,0,1}}")
+else
+    typeset -a tmuxFilterArgs=(-f '#{pane_active}')
+fi
+
+exec tmux list-panes -F '#{pane_pid}' "${tmuxArgs[@]}" "${tmuxTargetArgs[@]}" "${tmuxFilterArgs[@]}" "$@"
