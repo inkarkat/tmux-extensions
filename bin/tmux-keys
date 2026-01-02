@@ -13,7 +13,7 @@ printUsage()
 {
     cat <<HELPTEXT
 List custom tmux key bindings [matching all of SEARCH-PATTERN, a sed-style basic
-regular expresion].
+regular expression].
 HELPTEXT
     echo
     printf 'Usage: %q %s\n' "$(basename "$1")" '[SEARCH-PATTERN ...] [-?|-h|--help]'
