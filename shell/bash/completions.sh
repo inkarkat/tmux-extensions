@@ -1,7 +1,7 @@
 #!/bin/bash source-this-script
 
 # Source: http://www.debian-administration.org/articles/317 for how to write more.
-_tmux()
+_tmux_complete()
 {
     local cur prev opts
     COMPREPLY=()
@@ -102,14 +102,14 @@ up-pane
 
 }
 
-_tmuxEx()
+_tmux_wrapper()
 {
     local IFS=$'\n'
     typeset -a aliases=(); readarray -t aliases < <(compgen -A command -- 'tmux-')
     aliases=("${aliases[@]/#tmux-/}")
 
     if [ $COMP_CWORD -ge 2 ] && contains "${COMP_WORDS[1]}" "${aliases[@]}"; then
-	local tmuxAlias="_tmux_${COMP_WORDS[1]//-/_}"
+	local tmuxAlias="_tmux_${COMP_WORDS[1]//-/_}_complete"
 	# Completing an alias; delegate to its custom completion function (if
 	# available)
 	if type -t "$tmuxAlias" >/dev/null; then
@@ -121,7 +121,7 @@ _tmuxEx()
     fi
     unset IFS
 
-    _tmux "$@"
+    _tmux_complete "$@"	# The original completion function.
 
     if [ $COMP_CWORD -eq 1 ]; then
 	readarray -O ${#COMPREPLY[@]} -t COMPREPLY < <(
@@ -134,4 +134,4 @@ _tmuxEx()
 	)
     fi
 }
-complete -F _tmuxEx tmux
+complete -F _tmux_wrapper tmux tmux-wrapper
