@@ -2,17 +2,23 @@
 
 printUsage()
 {
-    clipboard --what 'tmux paste buffer' --help 2>&1 | sed \
+    tmuxClipboard --help 2>&1 | sed \
 	-e '2b removeFirstParagraphLoop' \
 	-e '/^Usage:$/N' -e '/\(^\|\n\)Usage: */{ s/\(^\|\n\)\(Usage: *\)\?\([^ |]\+ \)*clipboard /\1\2'"$(basename "$1")"' /; s/ \[--primary|(--get-command GET-COMMAND --put-command PUT-COMMAND \[--what WHAT\])\]//; }' \
 	-e b -e :removeFirstParagraphLoop -e '{ /\(^\|\n\)$/{ s/^\(.*\n\)\?//; b; }; N; b removeFirstParagraphLoop; }'
 }
+
+typeset -a clipboardConfigArgs=(
+    --get-command 'tmux show-buffer'
+    --put-command 'tmux load-buffer -'
+)
+tmuxClipboard()
+{
+    clipboard --what 'tmux paste buffer' "${clipboardConfigArgs[@]}" "$@"
+}
+
 case "$1" in
     --help|-h|-\?)	shift; printUsage "$0"; exit 0;;
 esac
 
-exec clipboard \
-    --what 'tmux paste buffer' \
-    --get-command "tmux show-buffer" \
-    --put-command "tmux load-buffer -" \
-    "$@"
+tmuxClipboard "$@"
