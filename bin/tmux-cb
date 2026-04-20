@@ -4,7 +4,7 @@ printUsage()
 {
     tmuxClipboard --help 2>&1 | sed \
 	-e '2b removeFirstParagraphLoop' \
-	-e '/^Usage:$/N' -e '/\(^\|\n\)Usage: */{ s/\(^\|\n\)\(Usage: *\)\?\(\([^ |]\+ \)*\(| \)\?\)clipboard /\1\2\3'"$(basename "$1")"' /; s/ \[--primary|(--get-command GET-COMMAND --put-command PUT-COMMAND \[--what WHAT\])\]//; / \.\.\. /{ s/\( | grep\|$\)/ [a-z]\1/; }; }' \
+	-e '/^Usage:$/N' -e '/\(^\|\n\)Usage: */{ s/\(^\|\n\)\(Usage: *\)\?\(\([^ |]\+ \)*\(| \)\?\)clipboard /\1\2\3'"$(basename "$1")"' /; s/ \[--primary|(--get-command GET-COMMAND --put-command PUT-COMMAND \[--what WHAT\])\]//; / \.\.\. /{ s/\( | grep\|$\)/ [a-z1-9]\1/; }; }' \
 	-e b -e :removeFirstParagraphLoop -e '{ /\(^\|\n\)$/{ s/^\(.*\n\)\?//; b; }; N; b removeFirstParagraphLoop; }'
 }
 
@@ -30,6 +30,16 @@ if [[ "$lastArg" = [a-z] ]]; then
     clipboardConfigArgs=(
 	--get-command "cat ${quotedRegistersDirspec}/${lastArg}"
 	--put-command "cat > ${quotedRegistersDirspec}/${lastArg}"
+    )
+elif [[ "$lastArg" = [1-9] ]]; then
+    set -- "${@:1:$(($#-1))}"
+    # Duplicated from ~/lib/ingo/tmux-named-registers/scripts/paste-last-buffer.sh
+    readarray -t nonRegisterBuffers < <(tmux list-buffers -F '#{buffer_name}' | grep --invert-match -e '^register-.$')
+    bufferName="${nonRegisterBuffers[$lastArg]}"
+    [ -n "$bufferName" ] || exit
+    printf -v quotedBufferName %q "$bufferName"
+    clipboardConfigArgs=(
+	--get-command "tmux show-buffer -b ${quotedBufferName}"
     )
 fi
 
