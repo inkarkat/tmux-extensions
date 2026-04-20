@@ -4,7 +4,7 @@ printUsage()
 {
     tmuxClipboard --help 2>&1 | sed \
 	-e '2b removeFirstParagraphLoop' \
-	-e '/^Usage:$/N' -e '/\(^\|\n\)Usage: */{ s/\(^\|\n\)\(Usage: *\)\?\([^ |]\+ \)*clipboard /\1\2'"$(basename "$1")"' /; s/ \[--primary|(--get-command GET-COMMAND --put-command PUT-COMMAND \[--what WHAT\])\]//; }' \
+	-e '/^Usage:$/N' -e '/\(^\|\n\)Usage: */{ s/\(^\|\n\)\(Usage: *\)\?\(\([^ |]\+ \)*\(| \)\?\)clipboard /\1\2\3'"$(basename "$1")"' /; s/ \[--primary|(--get-command GET-COMMAND --put-command PUT-COMMAND \[--what WHAT\])\]//; / \.\.\. /{ s/\( | grep\|$\)/ [a-z]\1/; }; }' \
 	-e b -e :removeFirstParagraphLoop -e '{ /\(^\|\n\)$/{ s/^\(.*\n\)\?//; b; }; N; b removeFirstParagraphLoop; }'
 }
 
@@ -20,5 +20,17 @@ tmuxClipboard()
 case "$1" in
     --help|-h|-\?)	shift; printUsage "$0"; exit 0;;
 esac
+
+# Integrate with inkarkat/tmux-named-registers plugin.
+lastArg=; [ $# -gt 0 ] && lastArg="${!#}"
+if [[ "$lastArg" = [a-z] ]]; then
+    set -- "${@:1:$(($#-1))}"
+    readonly registersDirspec="${XDG_DATA_HOME:-${HOME}/.local/share}/tmux/named-registers"
+    printf -v quotedRegistersDirspec '%q' "$registersDirspec"
+    clipboardConfigArgs=(
+	--get-command "cat ${quotedRegistersDirspec}/${lastArg}"
+	--put-command "cat > ${quotedRegistersDirspec}/${lastArg}"
+    )
+fi
 
 tmuxClipboard "$@"
