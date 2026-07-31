@@ -2,8 +2,8 @@
 
 # Allow definition of tmux aliases (e.g. "tmux foo") by putting an executable
 # "tmux-foo" somewhere in the PATH.
-## tmux SHELL-COMMAND	Execute a passed SHELL-COMMAND in a new tmux window
-##			(that automatically closes after SHELL-COMMAND
+## tmux n SHELL-COMMAND	Execute a passed SHELL-COMMAND in a new tmux window
+## tmux SHELL-COMMAND	(that automatically closes after SHELL-COMMAND
 ##			concludes.) SHELL-COMMAND can later also be re-executed
 ##			via my mappings that recall the queried command
 ##			(prefix + g* / prefix + g-).
@@ -21,9 +21,14 @@ tmux()
     elif type ${BASH_VERSION:+-t} "$tmuxAlias" >/dev/null 2>&1; then
 	shift
 	eval $tmuxAlias '"$@"'	# Need eval for shell aliases.
-    elif type ${BASH_VERSION:+-t} -- "$1" >/dev/null; then
+    elif [ "$1" = n ] || type ${BASH_VERSION:+-t} -- "$1" >/dev/null; then
+	[ "$1" = n ] && shift
+
 	printf -v quotedCommand '%q ' "$@"
-	tmux-wrapper set status on \; set -g @queried_command "${quotedCommand% }" \; new-window -c "#{pane_current_path}" "$(_tmux_projectDir)/lib/new-window-launcher.sh"
+	tmux-wrapper \
+	    set -g @queried_command "${quotedCommand% }" \; \
+	    new-window -c "#{pane_current_path}" "$(_tmux_projectDir)/lib/new-window-launcher.sh" \; \
+	    set status on
     else
 	tmux-wrapper "$@"
     fi
