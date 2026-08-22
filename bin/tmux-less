@@ -54,7 +54,7 @@ originalLines=$LINES
 onCompletion()
 {
     < "$statusFilespec" read -r status
-    ! ${DEBUG:+debugenabled --invert-match --} ${DEBUG:-:} || rm -f -- "$statusFilespec" 2>/dev/null
+    ${DEBUG:+debugcommand --} rm -f -- "$statusFilespec" 2>/dev/null
     LINES=$originalLines smartless --truncate-only "$captureFilespec"
     kill %% # Stop the sleep job that kept this script running.
     exit ${status:-3}
