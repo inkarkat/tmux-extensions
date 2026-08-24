@@ -105,17 +105,17 @@ up-pane
 _tmux_wrapper()
 {
     local IFS=$'\n'
-    typeset -a aliases=(); readarray -t aliases < <(compgen -A command -- 'tmux-')
-    aliases=("${aliases[@]/#tmux-/}")
+    typeset -a extensions=(); readarray -t extensions < <(compgen -A command -- 'tmux-')
+    extensions=("${extensions[@]/#tmux-/}")
 
-    if [ $COMP_CWORD -ge 2 ] && contains "${COMP_WORDS[1]}" "${aliases[@]}"; then
-	local tmuxAlias="_tmux_${COMP_WORDS[1]//-/_}_complete"
-	# Completing an alias; delegate to its custom completion function (if
+    if [ $COMP_CWORD -ge 2 ] && contains "${COMP_WORDS[1]}" "${extensions[@]}"; then
+	local tmuxExtension="_tmux_${COMP_WORDS[1]//-/_}_complete"
+	# Completing an extension; delegate to its custom completion function (if
 	# available)
-	if type -t "$tmuxAlias" >/dev/null; then
+	if type -t "$tmuxExtension" >/dev/null; then
 	    COMP_WORDS=("tmux-${COMP_WORDS[1]}" "${COMP_WORDS[@]:2}")
 	    let COMP_CWORD-=1
-	    "$tmuxAlias" "${COMP_WORDS[0]}" "${COMP_WORDS[COMP_CWORD]}" "${COMP_WORDS[COMP_CWORD-1]}"
+	    "$tmuxExtension" "${COMP_WORDS[0]}" "${COMP_WORDS[COMP_CWORD]}" "${COMP_WORDS[COMP_CWORD-1]}"
 	    return $?
 	fi
     fi
@@ -128,9 +128,9 @@ _tmux_wrapper()
 	    # Also offer (exported) shell functions and shell commands that my
 	    # tmux() wrapper function executes in a new window.
 	    compgen -A function -A command "${COMP_WORDS[COMP_CWORD]}"
-	    # Also offer aliases (tmux-aliasname, callable via my tmux wrapper
-	    # function as tmux aliasname).
-	    compgen -W "${aliases[*]}" -X "!${2}*"
+	    # Also offer extensions (tmux-extensionname, callable via my tmux wrapper
+	    # function as tmux extensionname).
+	    compgen -W "${extensions[*]}" -X "!${2}*"
 	)
     fi
 }

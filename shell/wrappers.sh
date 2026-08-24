@@ -1,6 +1,6 @@
 #!/bin/sh source-this-script
 
-# Allow definition of tmux aliases (e.g. "tmux foo") by putting an executable
+# Allow definition of tmux extensions (e.g. "tmux foo") by putting an executable
 # "tmux-foo" somewhere in the PATH.
 ## tmux sp SHELL-COMMAND
 ##			Execute a passed SHELL-COMMAND in a vertically split
@@ -30,12 +30,12 @@ _tmux_projectDir()
 }
 tmux()
 {
-    typeset tmuxAlias="tmux-$1"
+    typeset tmuxExtension="tmux-$1"
     if [ $# -eq 0 ]; then
 	tmux-wrapper ${TMUX_DEFAULT_COMMAND:-new-session}
-    elif type ${BASH_VERSION:+-t} "$tmuxAlias" >/dev/null 2>&1; then
+    elif type ${BASH_VERSION:+-t} "$tmuxExtension" >/dev/null 2>&1; then
 	shift
-	eval $tmuxAlias '"$@"'	# Need eval for shell aliases.
+	eval $tmuxExtension '"$@"'	# Need eval for shell extensions.
     elif [ "$1" = sp -o "$1" = vsp ]; then
 	case "$1" in
 	    sp)	    typeset splitArg=-v;;
