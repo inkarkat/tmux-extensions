@@ -1,0 +1,27 @@
+#!/bin/bash
+set -o pipefail
+
+printUsage()
+{
+    cat <<HELPTEXT
+Print the complete pane history.
+HELPTEXT
+    echo
+    printf 'Usage: %q %s\n' "$(basename "$1")" '[-?|-h|--help]'
+}
+
+case "$1" in
+    --help|-h|-\?)	shift; printUsage "$0"; exit 0;;
+esac
+
+# Cp. ~/.tmux/plugins/tmux-logging/scripts/save_complete_history.sh
+history_limit="$(tmux display-message -p -F "#{history_limit}")"
+
+capturePane()
+{
+    tmux capture-pane -J -S "-${history_limit}" -p
+}
+
+typeset -a pager=("${PAGER:-less}" --RAW-CONTROL-CHARS); [ -t 1 ] || pager=()
+eval 'capturePane "$@"' \
+    "${pager:+|}" '"${pager[@]}"'
