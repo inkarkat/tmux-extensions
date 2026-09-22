@@ -1,0 +1,9 @@
+#!/bin/bash
+set -o pipefail
+
+tmux-history \
+    |	EACHSPLIT_USAGE_TOPICS='' \
+	SPLITRECALL="${SPLITRECALL:-$(basename -- "${BASH_SOURCE[0]}")}" \
+	SPLITRECALL_ACTION_WHAT='individual command executions from in between shell prompts in the complete pane history' \
+	FILERECALL_WHAT='command execution' \
+	    promptRecall "$@"
