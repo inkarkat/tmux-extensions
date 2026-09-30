@@ -20,9 +20,16 @@ if [ -z "$TMUX" ]; then
     if [ $# -eq 1 ]; then
 	eval "$1"; exit $?
     else
-	exec "$@"
+	printf -v quotedSimpleCommand '%q ' "$@"
+	eval "${quotedSimpleCommand% }"
     fi
 fi
 
 [ $# -gt 0 ] || set -- "$(tmux show-options -Aqv default-shell)"
+
+if [[ "$1" =~ ^[[:alpha:]_][[:alnum:]_]*= ]] && ! type -t -- "$1" >/dev/null; then
+    # Detect and handle VAR=VALUE assignments through use of the env command.
+    set -- env "$@"
+fi
+
 eval "exec tmux split-window -p 100 -v $(customExports --ignore-undefined --prefix '-e ' | tr $'\n' ' ')" '-c "#{pane_current_path}" "$@"'
