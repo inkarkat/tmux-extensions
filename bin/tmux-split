@@ -36,4 +36,4 @@ if [[ "$1" =~ ^[[:alpha:]_][[:alnum:]_]*= ]] && ! type -t -- "$1" >/dev/null; th
 fi
 
 customExports="$(! ${DEBUG:+debugenabled --invert-match --extension \! --module customExports --} ${DEBUG:-:} || customExports --ignore-undefined --prefix '-e ' | tr $'\n' ' ')"
-eval "exec tmux split-window -p 100 -v $customExports" '-c "#{pane_current_path}" "$@"'
+eval "exec tmux split-window -l 100% -v $customExports" '-c "#{pane_current_path}" "$@"'
