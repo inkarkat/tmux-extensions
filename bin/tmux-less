@@ -1,4 +1,7 @@
 #!/bin/bash
+set -o pipefail
+
+${DEBUG:+eval $(debugtrace -o $- -- "$@")}
 
 printUsage()
 {
@@ -61,6 +64,7 @@ onCompletion()
 }
 trap onCompletion SIGUSR1
 
-eval "tmux split-window -p 100 -v $(customExports --ignore-undefined --prefix '-e ' | tr $'\n' ' ')" '-c "#{pane_current_path}" "${trapCommand};${quotedCommandLine}"'
+customExports="$(! ${DEBUG:+debugenabled --invert-match --extension \! --module customExports --} ${DEBUG:-:} || customExports --ignore-undefined --prefix '-e ' | tr $'\n' ' ')"
+eval "tmux split-window -p 100 -v $customExports" '-c "#{pane_current_path}" "${trapCommand};${quotedCommandLine}"'
 
 sleep infinity & wait	# The new tmux pane command runs asynchronously; we need to wait until we're informed about its exit.

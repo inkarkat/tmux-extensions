@@ -1,4 +1,7 @@
 #!/bin/bash
+set -o pipefail
+
+${DEBUG:+eval $(debugtrace -o $- -- "$@")}
 
 printUsage()
 {
@@ -32,4 +35,5 @@ if [[ "$1" =~ ^[[:alpha:]_][[:alnum:]_]*= ]] && ! type -t -- "$1" >/dev/null; th
     set -- env "$@"
 fi
 
-eval "exec tmux split-window -p 100 -v $(customExports --ignore-undefined --prefix '-e ' | tr $'\n' ' ')" '-c "#{pane_current_path}" "$@"'
+customExports="$(! ${DEBUG:+debugenabled --invert-match --extension \! --module customExports --} ${DEBUG:-:} || customExports --ignore-undefined --prefix '-e ' | tr $'\n' ' ')"
+eval "exec tmux split-window -p 100 -v $customExports" '-c "#{pane_current_path}" "$@"'
