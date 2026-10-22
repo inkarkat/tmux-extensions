@@ -103,7 +103,7 @@ onCompletion()
     < "$statusFilespec" read -r status
     ${DEBUG:+debugcommand --} rm -f -- "$statusFilespec" 2>/dev/null
     [ ! "$isCapture" ] || LINES=$originalLines smartless --truncate-only "$captureFilespec"
-    kill %% # Stop the sleep job that kept this script running.
+    kill %% 2>/dev/null	# Stop the sleep job that kept this script running.
     exit ${status:-3}
 }
 trap onCompletion SIGUSR1
