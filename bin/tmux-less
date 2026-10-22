@@ -3,9 +3,24 @@ set -o pipefail
 
 ${DEBUG:+eval $(debugtrace -o $- -- "$@")}
 
+printShortUsage()
+{
+    # Note: short followed by long option; if the user knows the short one, she can
+    # skim the long one.
+    printf 'Usage: [TMUX_LESS_LINES=N] %q %s\n' "$(basename "$1")" '[-l|--lines N|-L|--no-lines] [shell-command] [-?|-h|--help]'
+}
 printUsage()
 {
-    cat <<HELPTEXT
+    # This is the short help when launched with no or incorrect arguments.
+    # It is printed to stderr to avoid accidental processing.
+    printShortUsage "$1" >&2
+    printf >&2 '\nTry %q --help for more information.\n' "$(basename "$1")"
+}
+printLongUsage()
+{
+    # This is the long "man page" when launched with the help argument.
+    # It is printed to stdout to allow paging with 'more'.
+    cat <<HELPDESCRIPTION
 Run shell-command / a new shell in a vertically split new pane (when running in
 tmux) that (during the runtime of the command) takes up almost all the space of
 the current tmux pane, and wait for its completion.
@@ -13,14 +28,36 @@ Leading and trailing output from that new pane will be copied to the current
 pane, so that an excerpt of the command's output (or even its entirety if small
 enough) is kept (and the remainder available via a capture file), but only so
 much that it fits the terminal height.
-Returns the exit status of the shell-command.
-HELPTEXT
+HELPDESCRIPTION
     echo
-    printf 'Usage: %q %s\n' "$(basename "$1")" '[shell-command] [-?|-h|--help]'
+    printShortUsage "$1"
+    echo
+    cat <<HELPTEXT
+    --lines|-l N	Show N lines of output in the current pane (default: as
+			many that fit the terminal height).
+    --no-lines|-L	Don't show any output from shell-command in the current
+			pane after it exits.
+EXIT STATUS:
+    *	Any exit status from shell-command.
+HELPTEXT
 }
 
+isCapture=t
+setLines()
+{
+    local lineNum="${1:?}"; shift
+    if [ $lineNum -eq 0 ]; then
+	isCapture=
+    else
+	export SMARTLESS_NUM_LINES=$lineNum
+    fi
+}
+[ -n "$TMUX_LESS_LINES" ] && setLines "$TMUX_LESS_LINES"
+
 case "$1" in
-    --help|-h|-\?)	shift; printUsage "$0"; exit 0;;
+    --help|-h|-\?)	shift; printLongUsage "$0"; exit 0;;
+    --lines|-l)		shift; setLines "${1:?}"; shift;;
+    --no-lines|-L)	shift; setLines 0;;
 esac
 
 if [ -z "$TMUX" ]; then
@@ -39,16 +76,23 @@ esac
 statusFilespec="$(mktemp --tmpdir "$(basename -- "$0")-XXXXXX" 2>/dev/null || echo "${TMPDIR:-/tmp}/$(basename -- "$0").$$$RANDOM")"
 printf -v quotedStatus 'echo $? > %q' "$statusFilespec"
 
-# Capture as a smartless file, so that it can be recalled via its "mr" command.
-# Short command outputs will have trailing empty lines to fill up the pane's
-# height; remove those and any trailing whitespace in general.
-captureFilespec="$(smartless --get-filespec)" || exit 3
-printf -v quotedCapture -- '-J -S - -p | truncate-trailing > %q' "$captureFilespec"
+if [ "$isCapture" ]; then
+    # Capture as a smartless file, so that it can be recalled via its "mr" command.
+    # Short command outputs will have trailing empty lines to fill up the pane's
+    # height; remove those and any trailing whitespace in general.
+    captureFilespec="$(smartless --get-filespec)" || exit 3
+    printf -v quotedCapture -- '-J -S - -p | truncate-trailing > %q' "$captureFilespec"
 
-# When the new shell exits, capture its exit status, the pane's output, and then wake up this script.
-printf -v trapCommand 'trap %q\;\ tmux\ capture-pane\ -t\ "$(tmux display-message -p "#{pane_id}")"\ %q EXIT' \
-	"$quotedStatus" \
-	"${quotedCapture}; kill -SIGUSR1 $$"
+    # When the new shell exits, capture its exit status, the pane's output, and then wake up this script.
+    printf -v trapCommand 'trap %q\;\ tmux\ capture-pane\ -t\ "$(tmux display-message -p "#{pane_id}")"\ %q EXIT' \
+	    "$quotedStatus" \
+	    "${quotedCapture}; kill -SIGUSR1 $$"
+else
+    # When the new shell exits, capture its exit status, and then wake up this script.
+    printf -v trapCommand 'trap %q\;\ %q EXIT' \
+	    "$quotedStatus" \
+	    "kill -SIGUSR1 $$"
+fi
 
 # When we're outputting the head and tail of the pane's output, the enlargement
 # of the original pane may not yet have been reflected in the $LINES variable.
@@ -58,8 +102,8 @@ onCompletion()
 {
     < "$statusFilespec" read -r status
     ${DEBUG:+debugcommand --} rm -f -- "$statusFilespec" 2>/dev/null
-    LINES=$originalLines smartless --truncate-only "$captureFilespec"
-    kill %% # Stop the sleep job that kept this script running.
+    [ ! "$isCapture" ] || LINES=$originalLines smartless --truncate-only "$captureFilespec"
+    kill %% 2>/dev/null	# Stop the sleep job that kept this script running.
     exit ${status:-3}
 }
 trap onCompletion SIGUSR1
