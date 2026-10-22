@@ -3,9 +3,24 @@ set -o pipefail
 
 ${DEBUG:+eval $(debugtrace -o $- -- "$@")}
 
+printShortUsage()
+{
+    # Note: short followed by long option; if the user knows the short one, she can
+    # skim the long one.
+    printf 'Usage: %q %s\n' "$(basename "$1")" '[shell-command] [-?|-h|--help]'
+}
 printUsage()
 {
-    cat <<HELPTEXT
+    # This is the short help when launched with no or incorrect arguments.
+    # It is printed to stderr to avoid accidental processing.
+    printShortUsage "$1" >&2
+    printf >&2 '\nTry %q --help for more information.\n' "$(basename "$1")"
+}
+printLongUsage()
+{
+    # This is the long "man page" when launched with the help argument.
+    # It is printed to stdout to allow paging with 'more'.
+    cat <<HELPDESCRIPTION
 Run shell-command / a new shell in a vertically split new pane (when running in
 tmux) that (during the runtime of the command) takes up almost all the space of
 the current tmux pane, and wait for its completion.
@@ -13,14 +28,18 @@ Leading and trailing output from that new pane will be copied to the current
 pane, so that an excerpt of the command's output (or even its entirety if small
 enough) is kept (and the remainder available via a capture file), but only so
 much that it fits the terminal height.
-Returns the exit status of the shell-command.
-HELPTEXT
+HELPDESCRIPTION
     echo
-    printf 'Usage: %q %s\n' "$(basename "$1")" '[shell-command] [-?|-h|--help]'
+    printShortUsage "$1"
+    echo
+    cat <<HELPTEXT
+EXIT STATUS:
+    *	Any exit status from shell-command.
+HELPTEXT
 }
 
 case "$1" in
-    --help|-h|-\?)	shift; printUsage "$0"; exit 0;;
+    --help|-h|-\?)	shift; printLongUsage "$0"; exit 0;;
 esac
 
 if [ -z "$TMUX" ]; then
