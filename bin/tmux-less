@@ -7,7 +7,7 @@ printShortUsage()
 {
     # Note: short followed by long option; if the user knows the short one, she can
     # skim the long one.
-    printf 'Usage: [TMUX_LESS_LINES=N] %q %s\n' "$(basename "$1")" '[-l|--lines N|-L|--no-lines] [shell-command] [-?|-h|--help]'
+    printf 'Usage: [TMUX_LESS_LINES=N] %q %s\n' "$(basename "$1")" '[-l|--lines N|-L|--no-lines] [-s|--size N|P%] [--] [shell-command] [-?|-h|--help]'
 }
 printUsage()
 {
@@ -37,6 +37,10 @@ HELPDESCRIPTION
 			many that fit the terminal height).
     --no-lines|-L	Don't show any output from shell-command in the current
 			pane after it exits.
+    --size|-s N		Set the height of the split pane to N lines (default:
+			100%)
+    --size|-s P%	Set the height of the split pane to P percent of the
+			available space (default: 100%)
 EXIT STATUS:
     *	Any exit status from shell-command.
 HELPTEXT
@@ -54,11 +58,19 @@ setLines()
 }
 [ -n "$TMUX_LESS_LINES" ] && setLines "$TMUX_LESS_LINES"
 
-case "$1" in
-    --help|-h|-\?)	shift; printLongUsage "$0"; exit 0;;
-    --lines|-l)		shift; setLines "${1:?}"; shift;;
-    --no-lines|-L)	shift; setLines 0;;
-esac
+splitHeight=100%
+while [ $# -ne 0 ]
+do
+    case "$1" in
+	--help|-h|-\?)	shift; printLongUsage "$0"; exit 0;;
+	--lines|-l)	shift; setLines "${1:?}"; shift;;
+	--no-lines|-L)	shift; setLines 0;;
+	--size|-s)	shift; splitHeight="${1:?}"; shift;;
+	--)		shift; break;;
+	-*)		{ echo "ERROR: Unknown option \"$1\"!"; echo; printUsage "$0"; } >&2; exit 2;;
+	*)		break;;
+    esac
+done
 
 if [ -z "$TMUX" ]; then
     echo >&2 'ERROR: Not in a tmux session.'
@@ -109,6 +121,6 @@ onCompletion()
 trap onCompletion SIGUSR1
 
 customExports="$(! ${DEBUG:+debugenabled --invert-match --extension \! --module customExports --} ${DEBUG:-:} || customExports --ignore-undefined --prefix '-e ' | tr $'\n' ' ')"
-eval "tmux split-window -l 100% -v $customExports" '-c "#{pane_current_path}" "${trapCommand};${quotedCommandLine}"'
+eval "tmux split-window -l \$splitHeight -v $customExports" '-c "#{pane_current_path}" "${trapCommand};${quotedCommandLine}"'
 
 sleep infinity & wait	# The new tmux pane command runs asynchronously; we need to wait until we're informed about its exit.
