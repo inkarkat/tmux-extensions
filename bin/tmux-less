@@ -3,35 +3,13 @@ set -o pipefail
 
 ${DEBUG:+eval $(debugtrace -o $- -- "$@")}
 
-printShortUsage()
+readonly generalArgs='[-l|--lines N|-L|--no-lines] [-s|--size N|P%] [(-d|--directory DIRSPEC|--clipboard|--inbox) [-N|--command-name CN|-n|--name NAME|FILESPEC|--no-interpreter] [-a|--append]]'
+getShortUsage()
 {
-    # Note: short followed by long option; if the user knows the short one, she can
-    # skim the long one.
-    printf 'Usage: [TMUX_LESS_LINES=N] %q %s\n' "$(basename "$1")" '[-l|--lines N|-L|--no-lines] [-s|--size N|P%] [(-d|--directory DIRSPEC|--clipboard|--inbox) [-N|--command-name CN|-n|--name NAME|FILESPEC|--no-interpreter] [-a|--append]] [--] [shell-command] [-?|-h|--help]'
+    printf %s "$generalArgs"
 }
-printUsage()
+getLongUsage()
 {
-    # This is the short help when launched with no or incorrect arguments.
-    # It is printed to stderr to avoid accidental processing.
-    printShortUsage "$1" >&2
-    printf >&2 '\nTry %q --help for more information.\n' "$(basename "$1")"
-}
-printLongUsage()
-{
-    # This is the long "man page" when launched with the help argument.
-    # It is printed to stdout to allow paging with 'more'.
-    cat <<HELPDESCRIPTION
-Run shell-command / a new shell in a vertically split new pane (when running in
-tmux) that (during the runtime of the command) takes up almost all the space of
-the current tmux pane, and wait for its completion.
-Leading and trailing output from that new pane will be copied to the current
-pane, so that an excerpt of the command's output (or even its entirety if small
-enough) is kept (and the remainder available via a capture file), but only so
-much that it fits the terminal height.
-HELPDESCRIPTION
-    echo
-    printShortUsage "$1"
-    echo
     cat <<HELPTEXT
     --lines|-l N	Show N lines of output in the current pane (default: as
 			many that fit the terminal height).
@@ -58,7 +36,40 @@ HELPDESCRIPTION
     --no-interpreter	Drop a generic interpreter (bash, perl, python, etc.)
 			from a name that is derived from COMMAND.
     --append|-a		Append to file / clipboard.
-
+HELPTEXT
+}
+printShortUsage()
+{
+    # Note: short followed by long option; if the user knows the short one, they can
+    # skim the long one.
+    printf 'Usage: [TMUX_LESS_LINES=N] %q %s\n' "$(basename "$1")" "$generalArgs [--] [shell-command] [-?|-h|--help]"
+}
+printUsage()
+{
+    # This is the short help when launched with no or incorrect arguments.
+    # It is printed to stderr to avoid accidental processing.
+    printShortUsage "$1" >&2
+    printf >&2 '\nTry %q --help for more information.\n' "$(basename "$1")"
+}
+printLongUsage()
+{
+    # This is the long "man page" when launched with the help argument.
+    # It is printed to stdout to allow paging with 'more'.
+    cat <<HELPDESCRIPTION
+Run shell-command / a new shell in a vertically split new pane (when running in
+tmux) that (during the runtime of the command) takes up almost all the space of
+the current tmux pane, and wait for its completion.
+Leading and trailing output from that new pane will be copied to the current
+pane, so that an excerpt of the command's output (or even its entirety if small
+enough) is kept (and the remainder available via a capture file), but only so
+much that it fits the terminal height.
+HELPDESCRIPTION
+    echo
+    printShortUsage "$1"
+    echo
+    getLongUsage
+    echo
+    cat <<HELPTEXT
 SEE ALSO:
 - captureCommand executes a command and captures its output to a file,
   clipboard, or inbox, but doesn't use a split tmux pane, and either prints the
@@ -88,14 +99,32 @@ commandName=
 typeset -a commandNameArgs=()
 isAppend=
 target=
+option() { :; }
+parameter() { :; }
+parameterToSep() { :; }
+argCount() { :; }
+endOfOptionsAndParameters() { :; }
+noUnderstand() { :; }
 while [ $# -ne 0 ]
 do
     case "$1" in
 	--help|-h|-\?)	shift; printLongUsage "$0"; exit 0;;
+	--get-short-usage)
+			shift; getShortUsage "$@"; exit $?;;
+	--get-long-usage)
+			shift; getLongUsage "$@"; exit $?;;
+	--understands)	shift
+			option() { printf 1; exit 0; }
+			parameter() { printf 2; exit 0; }
+			parameterToSep() { argCount "$@"; }
+			argCount() { local argCount="${1:?}"; printf $argCount; exit 0; }
+			endOfOptionsAndParameters() { exit 99; }
+			noUnderstand() { exit 1; }
+			;;
 
-	--lines|-l)	shift; setLines "${1:?}"; shift;;
-	--no-lines|-L)	shift; setLines 0;;
-	--size|-s)	shift; splitHeight="${1:?}"; shift;;
+	--lines|-l)	shift; setLines "${1:?}"; shift; parameter;;
+	--no-lines|-L)	shift; setLines 0; option;;
+	--size|-s)	shift; splitHeight="${1:?}"; shift; parameter;;
 
 	--clipboard)	shift
 			if [ -n "$target" ]; then
@@ -103,25 +132,27 @@ do
 			    exit 2
 			fi
 			target=clipboard
+			option
 			;;
-	--directory|-d)	shift; dirspec="${1%%/}/"; shift;;
+	--directory|-d)	shift; dirspec="${1%%/}/"; shift; parameter;;
 	--inbox)	shift
 			if [ -n "$target" ]; then
 			    echo >&2 "ERROR: Cannot combine --clipboard with --$target"
 			    exit 2
 			fi
 			target=inbox
+			option
 			;;
-	--name|-n)	shift; captureName="$1"; shift;;
+	--name|-n)	shift; captureName="$1"; shift; parameter;;
 	--command-name|-N)
-			shift; commandName="$1"; shift;;
+			shift; commandName="$1"; shift; parameter;;
 	--no-interpreter)
-			commandNameArgs+=("$1"); shift;;
-	--append|-a)	shift; isAppend=t;;
+			commandNameArgs+=("$1"); shift; option;;
+	--append|-a)	shift; isAppend=t; option;;
 
-	--)		shift; break;;
-	-*)		{ echo "ERROR: Unknown option \"$1\"!"; echo; printUsage "$0"; } >&2; exit 2;;
-	*)		break;;
+	--)		endOfOptionsAndParameters; shift; break;;
+	-*)		noUnderstand; { echo "ERROR: Unknown option \"$1\"!"; echo; printUsage "$0"; } >&2; exit 2;;
+	*)		endOfOptionsAndParameters; break;;
     esac
 done
 if [ -n "$target" -a "$dirspec" ]; then
