@@ -7,7 +7,7 @@ printShortUsage()
 {
     # Note: short followed by long option; if the user knows the short one, she can
     # skim the long one.
-    printf 'Usage: [TMUX_LESS_LINES=N] %q %s\n' "$(basename "$1")" '[-l|--lines N|-L|--no-lines] [-s|--size N|P%] [--] [shell-command] [-?|-h|--help]'
+    printf 'Usage: [TMUX_LESS_LINES=N] %q %s\n' "$(basename "$1")" '[-l|--lines N|-L|--no-lines] [-s|--size N|P%] [(-d|--directory DIRSPEC|--clipboard|--inbox) [-N|--command-name CN|-n|--name NAME|FILESPEC|--no-interpreter] [-a|--append]] [--] [shell-command] [-?|-h|--help]'
 }
 printUsage()
 {
@@ -41,17 +41,40 @@ HELPDESCRIPTION
 			100%)
     --size|-s P%	Set the height of the split pane to P percent of the
 			available space (default: 100%)
+    --directory|-d DIRSPEC
+			Use DIRSPEC for the capture file (default: recall
+			through smartless).
+    --clipboard		Store the command's output in the system clipboard
+			(default: recall through smartless). Implies --no-lines.
+    --inbox		Use the special inbox command to store the command's
+			output (default: recall through smartless). Implies
+			--no-lines.
+    --name|-n NAME	Use NAME instead of generating one from the command
+			itself with an added timestamp.
+    --name|-n FILESPEC	Capture to FILESPEC (combined with to DIRSPEC if given).
+    --command-name|-N CN
+			Override just the command name; unlike --name, this
+			still adds the timestamp to it.
+    --no-interpreter	Drop a generic interpreter (bash, perl, python, etc.)
+			from a name that is derived from COMMAND.
+    --append|-a		Append to file / clipboard.
+
+SEE ALSO:
+- captureCommand executes a command and captures its output to a file,
+  clipboard, or inbox, but doesn't use a split tmux pane, and either prints the
+  full output or not at all.
+
 EXIT STATUS:
     *	Any exit status from shell-command.
 HELPTEXT
 }
 
-isCapture=t
+isShowCapture=t
 setLines()
 {
     local lineNum="${1:?}"; shift
     if [ $lineNum -eq 0 ]; then
-	isCapture=
+	isShowCapture=
     else
 	export SMARTLESS_NUM_LINES=$lineNum
     fi
@@ -59,18 +82,55 @@ setLines()
 [ -n "$TMUX_LESS_LINES" ] && setLines "$TMUX_LESS_LINES"
 
 splitHeight=100%
+dirspec=
+captureName=
+commandName=
+typeset -a commandNameArgs=()
+isAppend=
+target=
 while [ $# -ne 0 ]
 do
     case "$1" in
 	--help|-h|-\?)	shift; printLongUsage "$0"; exit 0;;
+
 	--lines|-l)	shift; setLines "${1:?}"; shift;;
 	--no-lines|-L)	shift; setLines 0;;
 	--size|-s)	shift; splitHeight="${1:?}"; shift;;
+
+	--clipboard)	shift
+			if [ -n "$target" ]; then
+			    echo >&2 "ERROR: Cannot combine --clipboard with --$target"
+			    exit 2
+			fi
+			target=clipboard
+			;;
+	--directory|-d)	shift; dirspec="${1%%/}/"; shift;;
+	--inbox)	shift
+			if [ -n "$target" ]; then
+			    echo >&2 "ERROR: Cannot combine --clipboard with --$target"
+			    exit 2
+			fi
+			target=inbox
+			;;
+	--name|-n)	shift; captureName="$1"; shift;;
+	--command-name|-N)
+			shift; commandName="$1"; shift;;
+	--no-interpreter)
+			commandNameArgs+=("$1"); shift;;
+	--append|-a)	shift; isAppend=t;;
+
 	--)		shift; break;;
 	-*)		{ echo "ERROR: Unknown option \"$1\"!"; echo; printUsage "$0"; } >&2; exit 2;;
 	*)		break;;
     esac
 done
+if [ -n "$target" -a "$dirspec" ]; then
+    echo >&2 "ERROR: Cannot combine --$target with --directory."
+    exit 2
+elif [ "$target" = clipboard  ] && [ -n "$captureName" ]; then
+    echo >&2 "ERROR: Cannot specify both --$target and --name!"
+    exit 2
+fi
 
 if [ -z "$TMUX" ]; then
     echo >&2 'ERROR: Not in a tmux session.'
@@ -88,17 +148,43 @@ esac
 statusFilespec="$(mktemp --tmpdir "$(basename -- "$0")-XXXXXX" 2>/dev/null || echo "${TMPDIR:-/tmp}/$(basename -- "$0").$$$RANDOM")"
 printf -v quotedStatus 'echo $? > %q' "$statusFilespec"
 
-if [ "$isCapture" ]; then
-    # Capture as a smartless file, so that it can be recalled via its "mr" command.
+capture=
+captureFilespec=
+if [ -n "$target" -o -n "$dirspec" ]; then
+    if [ "$target" = clipboard ]; then
+	capture="| ${target}${isAppend:+ --append}"
+    else
+	if [ -n "$captureName" ]; then
+	    targetNameArg=--name
+	else
+	    targetNameArg=--unlocalized-name
+	    [ -n "$commandName" ] || commandName="$(commandName --no-include-files --no-include-subcommands "${commandNameArgs[@]}" --eval "${quotedCommandLine# }")"
+	    dateFormat='+%Y%m%d-%H%M%S'
+	    [ "$isAppend" ] && dateFormat='+%Y%m%d' # Appending to a file name that has a timestamp with seconds precision doesn't make much sense. Instead, use a separate timestamp only each day. Users can tweak this with --name, anyway.
+	    captureName="$(basename "${commandName:-capture}")_$(date "$dateFormat")"
+	fi
+
+	if [ -n "$target" ]; then
+	    printf -v capture '| %s %q' "${target}${isAppend:+ --append}${targetNameArg:+ }${targetNameArg}" "$captureName"
+	else
+	    captureFilespec="${dirspec}${captureName}"
+	    printf -v capture '>%s%q' "${isAppend:+>}" "$captureFilespec"
+	fi
+    fi
+else
+    # Capture as a smartless file, so that it can be recalled via its
+    # smartless-recall command.
+    captureFilespec="$(smartless --get-filespec)" || exit 3
+    printf -v capture '>%q' "$captureFilespec"
+fi
+
+if [ "$isShowCapture" ] || [ -n "$capture" ]; then
+    # When the new shell exits, capture its exit status, the pane's output, and then wake up this script.
     # Short command outputs will have trailing empty lines to fill up the pane's
     # height; remove those and any trailing whitespace in general.
-    captureFilespec="$(smartless --get-filespec)" || exit 3
-    printf -v quotedCapture -- '-J -S - -p | truncate-trailing > %q' "$captureFilespec"
-
-    # When the new shell exits, capture its exit status, the pane's output, and then wake up this script.
     printf -v trapCommand 'trap %q\;\ tmux\ capture-pane\ -t\ "$(tmux display-message -p "#{pane_id}")"\ %q EXIT' \
 	    "$quotedStatus" \
-	    "${quotedCapture}; kill -SIGUSR1 $$"
+	    "-J -S - -p | truncate-trailing ${capture}; kill -SIGUSR1 $$"
 else
     # When the new shell exits, capture its exit status, and then wake up this script.
     printf -v trapCommand 'trap %q\;\ %q EXIT' \
@@ -114,7 +200,7 @@ onCompletion()
 {
     < "$statusFilespec" read -r status
     ${DEBUG:+debugcommand --} rm -f -- "$statusFilespec" 2>/dev/null
-    [ ! "$isCapture" ] || LINES=$originalLines smartless --truncate-only "$captureFilespec"
+    [ -z "$captureFilespec" ] || LINES=$originalLines smartless --truncate-only "$captureFilespec"
     kill %% 2>/dev/null	# Stop the sleep job that kept this script running.
     exit ${status:-3}
 }
