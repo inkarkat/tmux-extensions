@@ -99,6 +99,12 @@ commandName=
 typeset -a commandNameArgs=()
 isAppend=
 target=
+option() { :; }
+parameter() { :; }
+parameterToSep() { :; }
+argCount() { :; }
+endOfOptionsAndParameters() { :; }
+noUnderstand() { :; }
 while [ $# -ne 0 ]
 do
     case "$1" in
@@ -107,10 +113,18 @@ do
 			shift; getShortUsage "$@"; exit $?;;
 	--get-long-usage)
 			shift; getLongUsage "$@"; exit $?;;
+	--understands)	shift
+			option() { printf 1; exit 0; }
+			parameter() { printf 2; exit 0; }
+			parameterToSep() { argCount "$@"; }
+			argCount() { local argCount="${1:?}"; printf $argCount; exit 0; }
+			endOfOptionsAndParameters() { exit 99; }
+			noUnderstand() { exit 1; }
+			;;
 
-	--lines|-l)	shift; setLines "${1:?}"; shift;;
-	--no-lines|-L)	shift; setLines 0;;
-	--size|-s)	shift; splitHeight="${1:?}"; shift;;
+	--lines|-l)	shift; setLines "${1:?}"; shift; parameter;;
+	--no-lines|-L)	shift; setLines 0; option;;
+	--size|-s)	shift; splitHeight="${1:?}"; shift; parameter;;
 
 	--clipboard)	shift
 			if [ -n "$target" ]; then
@@ -118,25 +132,27 @@ do
 			    exit 2
 			fi
 			target=clipboard
+			option
 			;;
-	--directory|-d)	shift; dirspec="${1%%/}/"; shift;;
+	--directory|-d)	shift; dirspec="${1%%/}/"; shift; parameter;;
 	--inbox)	shift
 			if [ -n "$target" ]; then
 			    echo >&2 "ERROR: Cannot combine --clipboard with --$target"
 			    exit 2
 			fi
 			target=inbox
+			option
 			;;
-	--name|-n)	shift; captureName="$1"; shift;;
+	--name|-n)	shift; captureName="$1"; shift; parameter;;
 	--command-name|-N)
-			shift; commandName="$1"; shift;;
+			shift; commandName="$1"; shift; parameter;;
 	--no-interpreter)
-			commandNameArgs+=("$1"); shift;;
-	--append|-a)	shift; isAppend=t;;
+			commandNameArgs+=("$1"); shift; option;;
+	--append|-a)	shift; isAppend=t; option;;
 
-	--)		shift; break;;
-	-*)		{ echo "ERROR: Unknown option \"$1\"!"; echo; printUsage "$0"; } >&2; exit 2;;
-	*)		break;;
+	--)		endOfOptionsAndParameters; shift; break;;
+	-*)		noUnderstand; { echo "ERROR: Unknown option \"$1\"!"; echo; printUsage "$0"; } >&2; exit 2;;
+	*)		endOfOptionsAndParameters; break;;
     esac
 done
 if [ -n "$target" -a "$dirspec" ]; then
