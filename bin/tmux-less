@@ -59,6 +59,11 @@ HELPDESCRIPTION
 			from a name that is derived from COMMAND.
     --append|-a		Append to file / clipboard.
 
+SEE ALSO:
+- captureCommand executes a command and captures its output to a file,
+  clipboard, or inbox, but doesn't use a split tmux pane, and either prints the
+  full output or not at all.
+
 EXIT STATUS:
     *	Any exit status from shell-command.
 HELPTEXT
