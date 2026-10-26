@@ -230,7 +230,7 @@ originalLines=$LINES
 onCompletion()
 {
     < "$statusFilespec" read -r status
-    ${DEBUG:+debugcommand --} rm -f -- "$statusFilespec" 2>/dev/null
+    ${DEBUG:+debugcommand --module cleanup --} rm -f -- "$statusFilespec" 2>/dev/null
     [ -z "$captureFilespec" ] || LINES=$originalLines smartless --truncate-only "$captureFilespec"
     kill %% 2>/dev/null	# Stop the sleep job that kept this script running.
     exit ${status:-3}
